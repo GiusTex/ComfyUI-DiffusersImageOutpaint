@@ -1,0 +1,7 @@
+torch
+numpy==1.26.4
+transformers
+accelerate
+diffusers
+fastapi<0.113.0
+opencv-python
