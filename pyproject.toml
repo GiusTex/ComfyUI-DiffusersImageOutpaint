@@ -10,6 +10,6 @@ Repository = "https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "giustex"
 DisplayName = "ComfyUI-DiffusersImageOutpaint"
 Icon = ""
