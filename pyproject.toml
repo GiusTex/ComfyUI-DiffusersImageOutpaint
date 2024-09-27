@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-diffusersimageoutpaint"
+description = "ComfyUI nodes for outpainting images with diffusers, based on [a/diffusers-image-outpaint](https://huggingface.co/spaces/fffiloni/diffusers-image-outpaint/tree/main) by fffiloni."
+version = "1.0.0"
+license = {file = "LICENSE"}
+dependencies = ["torch", "numpy==1.26.4", "transformers", "accelerate", "diffusers", "fastapi<0.113.0", "opencv-python"]
+
+[project.urls]
+Repository = "https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = "giustex"
+DisplayName = "ComfyUI-DiffusersImageOutpaint"
+Icon = ""
