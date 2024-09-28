@@ -211,7 +211,7 @@ class LoadDiffusersOutpaintModels:
         pipe = StableDiffusionXLFillPipeline.from_pretrained(
             f"{model_path}",
             torch_dtype=torch.float16,
-            vae=vae_model,
+            vae=vae,
             controlnet=controlnet_model,
             variant="fp16",
         ).to("cuda")
@@ -220,7 +220,7 @@ class LoadDiffusersOutpaintModels:
         
         diffusers_outpaint_pipe = {
             "pipe": pipe,
-            "vae": vae,
+            "vae": vae_model,
             "model": model,
             "controlnet_model": controlnet_model,
             "state_dict": state_dict,
