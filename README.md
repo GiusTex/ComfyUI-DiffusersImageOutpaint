@@ -25,7 +25,7 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 ## Overview
 **Minimum VRAM**: 8,3 gb with 1280x720 image, `vae_slicing`, rtx 3060, RealVisXL_V5.0_Lightning, sdxl-vae-fp16-fix, controlnet-union-sdxl-promax.
 
-The extension gives 3 nodes:
+The extension gives 4 nodes:
 - **Load Diffusion Outpaint Models**: a simple node to load diffusion `models`. You can download them from Huggingface (the extension doesn't download them automatically);
 - **Paid Image for Diffusers Outpaint**: this node creates an empty image of the `desired size`, fits the original image in the new one based on the chosen `alignment`, then mask the rest;
 - **Encode Diffusers Outpaint Prompt**: self explanatory. Works as `clip text encode (prompt)`;
