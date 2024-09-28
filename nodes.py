@@ -194,7 +194,6 @@ class LoadDiffusersOutpaintModels:
 
         # Set up VAE
         vae = AutoencoderKL.from_pretrained(f"{vae_path}", torch_dtype=torch.float16).to("cuda")
-        vae_model = vae
         
         if enable_vae_slicing:
             vae.enable_slicing()
@@ -220,7 +219,7 @@ class LoadDiffusersOutpaintModels:
         
         diffusers_outpaint_pipe = {
             "pipe": pipe,
-            "vae": vae_model,
+            "vae": vae,
             "model": model,
             "controlnet_model": controlnet_model,
             "state_dict": state_dict,
@@ -259,6 +258,11 @@ class DiffusersImageOutpaint:
 
     def sample(self, diffusers_outpaint_pipe, diffuser_outpaint_cnet_image, seed, steps, extra_prompt=None):
         pipe = diffusers_outpaint_pipe["pipe"]
+        vae = diffusers_outpaint_pipe["vae"]
+        model = diffusers_outpaint_pipe["model"]
+        controlnet_model = diffusers_outpaint_pipe["controlnet_model"]
+        state_dict = diffusers_outpaint_pipe["state_dict"]
+        model_file = diffusers_outpaint_pipe["model_file"]
         
         final_prompt = f"{extra_prompt}, high quality, 4k"
         
@@ -285,7 +289,7 @@ class DiffusersImageOutpaint:
         ))
         
         if not diffusers_outpaint_pipe["keep_models_in_vram"]:
-            del pipe, diffusers_outpaint_pipe["vae"], diffusers_outpaint_pipe["model"], diffusers_outpaint_pipe["controlnet_model"], diffusers_outpaint_pipe["state_dict"], diffusers_outpaint_pipe["model_file"], prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds 
+            del pipe, vae, model, controlnet_model, state_dict, model_file, prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds 
             gc.collect()
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
