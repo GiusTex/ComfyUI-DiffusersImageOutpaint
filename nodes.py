@@ -290,7 +290,7 @@ class DiffusersImageOutpaint:
             torch.cuda.ipc_collect()
 
         last_image = generated_images[-1] # Access the last image
-        image = last_image.convert("RGBA")
+        image = last_image.convert("RGB")
         output=pil2tensor(image)
         
         return (output,)
