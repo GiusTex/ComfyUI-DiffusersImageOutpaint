@@ -150,6 +150,7 @@ def get_first_folder_list(folder_name: str) -> tuple[list[str], dict[str, float]
     visible_folders = [name for name in os.listdir(root_folder) if os.path.isdir(os.path.join(root_folder, name))]
     return visible_folders
 
+
 class LoadDiffusersOutpaintModels:
     @classmethod
     def INPUT_TYPES(s):
@@ -160,8 +161,6 @@ class LoadDiffusersOutpaintModels:
                 "controlnet_model": (get_first_folder_list("diffusion_models"), {"default": "controlnet-union-sdxl-1.0", "tooltip": "The controlnet model used for denoising the input latent.(Put model files in the controlnet folder)."}),
             },
             "optional": {
-                "keep_models_in_vram": ("BOOLEAN", {"default": False, "tooltip": "Set to false to unload diffusion models, and maybe others too, from vram."}),
-                "enable_model_cpu_offload": ("BOOLEAN", {"default": True, "tooltip": "Reduces memory usage with a low impact on performance."}),
                 "enable_vae_slicing": ("BOOLEAN", {"default": True, "tooltip": "VAE will split the input tensor in slices to compute decoding in several steps. This is useful to save some memory and allow larger batch sizes."}),
                 "enable_vae_tiling": ("BOOLEAN", {"default": False, "tooltip": "Drastically reduces memory use but may introduce seams"}),
             },
@@ -172,7 +171,7 @@ class LoadDiffusersOutpaintModels:
     FUNCTION = "load"
     CATEGORY = "DiffusersOutpaint"
    
-    def load(self, model, vae, controlnet_model, keep_models_in_vram, enable_model_cpu_offload, enable_vae_slicing, enable_vae_tiling):
+    def load(self, model, vae, controlnet_model, enable_vae_slicing, enable_vae_tiling):
         # Go 2 folders back
         comfy_dir = os.path.dirname(os.path.dirname(my_dir))
         
@@ -215,12 +214,13 @@ class LoadDiffusersOutpaintModels:
             torch_dtype=torch.float16,
             vae=vae,
             controlnet=controlnet_model,
-            variant="fp16",
-        ).to("cuda")
-
-        pipe.scheduler = TCDScheduler.from_config(pipe.scheduler.config)
+            variant="fp16"
+        )
         
-        del state_dict, model_file
+        pipe.scheduler = TCDScheduler.from_config(pipe.scheduler.config)
+        pipe.enable_model_cpu_offload()
+
+        del model, state_dict, model_file
         gc.collect()
         torch.cuda.empty_cache()
         torch.cuda.ipc_collect()
@@ -228,12 +228,9 @@ class LoadDiffusersOutpaintModels:
         diffusers_outpaint_pipe = {
             "pipe": pipe,
             "vae": vae,
-            "model": model,
-            "controlnet_model": controlnet_model,
-            "enable_model_cpu_offload": enable_model_cpu_offload,
-            "keep_models_in_vram": keep_models_in_vram
+            "controlnet_model": controlnet_model
         }
-        
+
         return (diffusers_outpaint_pipe,)
 
 
@@ -245,16 +242,59 @@ def tensor2pil(image: torch.Tensor) -> Image.Image:
 def pil2tensor(image: Image.Image) -> torch.Tensor:
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
 
+class EncodeDiffusersOutpaintPrompt:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "diffusers_outpaint_pipe": ("PIPE", {"tooltip": "Load the diffusers outpaint models."}),
+                "extra_prompt": ("STRING", {"default": "", "tooltip": "The extra prompt to append, describing attributes etc. you want to include in the image. Default: \"(extra_prompt), high quality, 4k\""}),
+            }
+        }
+
+    RETURN_TYPES = ("PIPE","CONDITIONING",)
+    RETURN_NAMES = ("diffusers_outpaint_pipe","diffusers_outpaint_conditioning",)
+    FUNCTION = "sample"
+    CATEGORY = "DiffusersOutpaint"
+
+    def sample(self, diffusers_outpaint_pipe, extra_prompt=None):
+        pipe = diffusers_outpaint_pipe["pipe"]
+        
+        final_prompt = f"{extra_prompt}, high quality, 4k"
+        
+        (prompt_embeds,
+         negative_prompt_embeds,
+         pooled_prompt_embeds,
+         negative_pooled_prompt_embeds,
+        ) = pipe.encode_prompt(final_prompt)
+        
+        diffusers_outpaint_conditioning = {
+            "prompt_embeds": prompt_embeds,
+            "negative_prompt_embeds": negative_prompt_embeds,
+            "pooled_prompt_embeds": pooled_prompt_embeds,
+            "negative_pooled_prompt_embeds": negative_pooled_prompt_embeds
+        }
+        
+        del pipe.text_encoder, pipe.text_encoder_2, pipe.tokenizer, pipe.tokenizer_2
+        gc.collect()
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+        # Update pipe
+        diffusers_outpaint_pipe["pipe"] = pipe
+
+        return (diffusers_outpaint_pipe,diffusers_outpaint_conditioning,)
+
+
 class DiffusersImageOutpaint:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
                 "diffusers_outpaint_pipe": ("PIPE", {"tooltip": "Load the diffusers outpaint models."}),
+                "diffusers_outpaint_conditioning": ("CONDITIONING", {"tooltip": "The prompt describing what you want."}),
                 "diffuser_outpaint_cnet_image": ("IMAGE", {"tooltip": "The image to outpaint."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "Fake seed, workaround used to keep generating different outpaints. Set to -1 to generate different images, or a fixed number to stop that."}),
                 "steps": ("INT", {"default": 8, "min": 4, "max": 20, "tooltip": "The number of steps used in the denoising process."}),
-                "extra_prompt": ("STRING", {"default": "", "tooltip": "The extra prompt to append, describing attributes etc. you want to include in the image. Default: \"(extra_prompt), high quality, 4k\""}),
             }
         }
 
@@ -262,27 +302,20 @@ class DiffusersImageOutpaint:
     FUNCTION = "sample"
     CATEGORY = "DiffusersOutpaint"
 
-    def sample(self, diffusers_outpaint_pipe, diffuser_outpaint_cnet_image, seed, steps, extra_prompt=None):
+    def sample(self, diffusers_outpaint_pipe, diffusers_outpaint_conditioning, diffuser_outpaint_cnet_image, seed, steps):
+        # I have to save them here to cache them. The node doesn't load them again
         pipe = diffusers_outpaint_pipe["pipe"]
         vae = diffusers_outpaint_pipe["vae"]
-        model = diffusers_outpaint_pipe["model"]
         controlnet_model = diffusers_outpaint_pipe["controlnet_model"]
-        
-        final_prompt = f"{extra_prompt}, high quality, 4k"
-        
+        prompt_embeds = diffusers_outpaint_conditioning["prompt_embeds"]
+        negative_prompt_embeds = diffusers_outpaint_conditioning["negative_prompt_embeds"]
+        pooled_prompt_embeds = diffusers_outpaint_conditioning["pooled_prompt_embeds"]
+        negative_pooled_prompt_embeds = diffusers_outpaint_conditioning["negative_pooled_prompt_embeds"]
+
         cnet_image = diffuser_outpaint_cnet_image
         cnet_image=tensor2pil(cnet_image)
         cnet_image=cnet_image.convert('RGB')
         
-        (prompt_embeds,
-         negative_prompt_embeds,
-         pooled_prompt_embeds,
-         negative_pooled_prompt_embeds,
-        ) = pipe.encode_prompt(final_prompt, "cuda", True)
-        
-        if diffusers_outpaint_pipe["enable_model_cpu_offload"]:
-            pipe.enable_model_cpu_offload()
-
         generated_images = list(pipe(
             prompt_embeds=prompt_embeds,
             negative_prompt_embeds=negative_prompt_embeds,
@@ -292,11 +325,10 @@ class DiffusersImageOutpaint:
             num_inference_steps=steps
         ))
         
-        if not diffusers_outpaint_pipe["keep_models_in_vram"]:
-            del pipe, vae, model, controlnet_model, prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds
-            gc.collect()
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
+        del pipe, vae, controlnet_model, prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds
+        gc.collect()
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
 
         last_image = generated_images[-1] # Access the last image
         image = last_image.convert("RGB")
