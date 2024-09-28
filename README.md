@@ -4,7 +4,7 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 
 ## Installation
 - Download this extension or `git clone` it in comfyui/custom_nodes, then (if comfyui-manager didn't already install the requirements or you have missing modules), from comfyui virtual env write `cd your/path/to/this/extension` and `pip install -r requirements.txt`.
-- Download models in the **`comfyui/models/diffusion_models`** folder, following the grid below (the links are the suggested models, and you can change the main model, but you need the specified vae and controlnet since the extension is hardcoded to use them (you can always change the code to use different models):
+- Download models in the **`comfyui/models/diffusion_models`** folder, following the grid below (you can use the links to download the suggested models; you can also change the main model, but you need the specified vae and controlnet since the extension is hardcoded to use them. You can always change the code to use different models):
   | 	**main model**	 | 	**controlnet model**	 | 	**vae model**	 |
   | 	:-----:	 | 	:-----:	 | 	:-----:	 |
   | 	**[Diffuser Model folder](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/tree/main)** (you can change this model)	| 	**[Diffuser Vae folder](https://huggingface.co/madebyollin/sdxl-vae-fp16-fix/tree/main)** (you need this model)	| 	**[Diffuser Controlnet folder](https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/tree/main)** (you need this model)	 |
