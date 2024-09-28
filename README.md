@@ -23,6 +23,8 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
   | 	merges.txt, special_tokens_map.json, tokenizer_config.json, vocab.json	| | |
   
 ## Overview
+**Minimum VRAM**: 8,4 gb with `model_cpu_offload`, `vae_slicing` and 1280x720 image, on rtx 3060, but [zmwv823](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/issues/3#issue-2554112238) used even less, 5,6 gb, so I'd say vram usage is between those values.
+
 The extension gives 3 nodes:
 - **Load Diffusion Outpaint Models**: a simple node to load diffusion `models`. You can download them from Huggingface (the extension doesn't download them automatically);
 - **Paid Image for Diffusers Outpaint**: this node creates an empty image of the `desired size`, fits the original image in the new one based on the chosen `alignment`, then mask the rest;
