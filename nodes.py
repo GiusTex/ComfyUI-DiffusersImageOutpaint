@@ -156,9 +156,9 @@ class LoadDiffusersOutpaintModels:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model": (get_first_folder_list("diffusion_models"), {"default": "RealVisXL_V5.0_Lightning", "tooltip": "The diffuser model used for denoising the input latent. (Put model files in the unet folder)."}),
-                "vae": (get_first_folder_list("diffusion_models"), {"default": "sdxl-vae-fp16-fix", "tooltip": "The vae model used for denoising the input latent.(Put model files in the vae folder)."}),
-                "controlnet_model": (get_first_folder_list("diffusion_models"), {"default": "controlnet-union-sdxl-1.0", "tooltip": "The controlnet model used for denoising the input latent.(Put model files in the controlnet folder)."}),
+                "model": (get_first_folder_list("diffusion_models"), {"default": "RealVisXL_V5.0_Lightning", "tooltip": "The diffuser model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
+                "vae": (get_first_folder_list("diffusion_models"), {"default": "sdxl-vae-fp16-fix", "tooltip": "The vae model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
+                "controlnet_model": (get_first_folder_list("diffusion_models"), {"default": "controlnet-union-sdxl-1.0", "tooltip": "The controlnet model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
             },
             "optional": {
                 "enable_vae_slicing": ("BOOLEAN", {"default": True, "tooltip": "VAE will split the input tensor in slices to compute decoding in several steps. This is useful to save some memory and allow larger batch sizes."}),
