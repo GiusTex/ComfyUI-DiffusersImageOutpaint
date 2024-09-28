@@ -194,6 +194,7 @@ class LoadDiffusersOutpaintModels:
 
         # Set up VAE
         vae = AutoencoderKL.from_pretrained(f"{vae_path}", torch_dtype=torch.float16).to("cuda")
+        vae_model = vae
         
         if enable_vae_slicing:
             vae.enable_slicing()
@@ -210,7 +211,7 @@ class LoadDiffusersOutpaintModels:
         pipe = StableDiffusionXLFillPipeline.from_pretrained(
             f"{model_path}",
             torch_dtype=torch.float16,
-            vae=vae,
+            vae=vae_model,
             controlnet=controlnet_model,
             variant="fp16",
         ).to("cuda")
