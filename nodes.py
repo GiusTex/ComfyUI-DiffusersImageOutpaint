@@ -143,7 +143,10 @@ def get_first_folder_list(folder_name: str) -> tuple[list[str], dict[str, float]
     folder_name = map_legacy(folder_name)
     global folder_names_and_paths
     folders = folder_names_and_paths[folder_name]
-    root_folder = folders[0][0]
+    if folder_name == "unet":
+        root_folder = folders[0][0]
+    elif folder_name == "diffusion_models":
+        root_folder = folders[0][1]
     visible_folders = [name for name in os.listdir(root_folder) if os.path.isdir(os.path.join(root_folder, name))]
     return visible_folders
 
@@ -152,9 +155,9 @@ class LoadDiffusersOutpaintModels:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model": (get_first_folder_list("unet"), {"tooltip": "The diffuser model used for denoising the input latent. (Put model files in the unet folder)."}),
-                "vae": (get_first_folder_list("vae"), {"tooltip": "The vae model used for denoising the input latent.(Put model files in the vae folder)."}),
-                "controlnet_model": (get_first_folder_list("controlnet"), {"tooltip": "The controlnet model used for denoising the input latent.(Put model files in the controlnet folder)."}),
+                "model": (get_first_folder_list("diffusion_models"), {"default": "RealVisXL_V5.0_Lightning", "tooltip": "The diffuser model used for denoising the input latent. (Put model files in the unet folder)."}),
+                "vae": (get_first_folder_list("diffusion_models"), {"default": "sdxl-vae-fp16-fix", "tooltip": "The vae model used for denoising the input latent.(Put model files in the vae folder)."}),
+                "controlnet_model": (get_first_folder_list("diffusion_models"), {"default": "controlnet-union-sdxl-1.0", "tooltip": "The controlnet model used for denoising the input latent.(Put model files in the controlnet folder)."}),
             },
             "optional": {
                 "keep_models_in_vram": ("BOOLEAN", {"default": False, "tooltip": "Set to false to unload diffusion models, and maybe others too, from vram."}),
@@ -173,9 +176,9 @@ class LoadDiffusersOutpaintModels:
         # Go 2 folders back
         comfy_dir = os.path.dirname(os.path.dirname(my_dir))
         
-        model_path = f"{comfy_dir}/models/unet/{model}"
-        vae_path = f"{comfy_dir}/models/vae/{vae}"
-        controlnet_path = f"{comfy_dir}/models/controlnet/{controlnet_model}"
+        model_path = f"{comfy_dir}/models/diffusion_models/{model}"
+        vae_path = f"{comfy_dir}/models/diffusion_models/{vae}"
+        controlnet_path = f"{comfy_dir}/models/diffusion_models/{controlnet_model}"
         #-----------------------------------------------------------------------
 
         # Set up Controlnet-Union-Promax-SDXL model
@@ -217,17 +220,20 @@ class LoadDiffusersOutpaintModels:
 
         pipe.scheduler = TCDScheduler.from_config(pipe.scheduler.config)
         
+        del state_dict, model_file
+        gc.collect()
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+
         diffusers_outpaint_pipe = {
             "pipe": pipe,
             "vae": vae,
             "model": model,
             "controlnet_model": controlnet_model,
-            "state_dict": state_dict,
-            "model_file": model_file,
             "enable_model_cpu_offload": enable_model_cpu_offload,
             "keep_models_in_vram": keep_models_in_vram
         }
-
+        
         return (diffusers_outpaint_pipe,)
 
 
@@ -261,8 +267,6 @@ class DiffusersImageOutpaint:
         vae = diffusers_outpaint_pipe["vae"]
         model = diffusers_outpaint_pipe["model"]
         controlnet_model = diffusers_outpaint_pipe["controlnet_model"]
-        state_dict = diffusers_outpaint_pipe["state_dict"]
-        model_file = diffusers_outpaint_pipe["model_file"]
         
         final_prompt = f"{extra_prompt}, high quality, 4k"
         
@@ -289,7 +293,7 @@ class DiffusersImageOutpaint:
         ))
         
         if not diffusers_outpaint_pipe["keep_models_in_vram"]:
-            del pipe, vae, model, controlnet_model, state_dict, model_file, prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds 
+            del pipe, vae, model, controlnet_model, prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds
             gc.collect()
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
