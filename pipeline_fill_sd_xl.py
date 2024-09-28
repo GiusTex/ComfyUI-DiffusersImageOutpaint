@@ -26,6 +26,7 @@ from diffusers.utils.torch_utils import randn_tensor
 from transformers import CLIPTextModel, CLIPTextModelWithProjection, CLIPTokenizer
 
 from .controlnet_union import ControlNetModel_Union
+from comfy.utils import ProgressBar
 
 
 def latents_to_rgb(latents):
@@ -470,6 +471,7 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
         controlnet_added_cond_kwargs = added_cond_kwargs
 
         # 8. Denoising loop
+        ComfyUI_ProgressBar = ProgressBar(int(num_inference_steps))
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
 
         with self.progress_bar(total=num_inference_steps) as progress_bar:
@@ -547,6 +549,7 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
                     (i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0
                 ):
                     progress_bar.update()
+                    ComfyUI_ProgressBar.update(1)
                     yield latents_to_rgb(latents)
 
         latents = latents / self.vae.config.scaling_factor
