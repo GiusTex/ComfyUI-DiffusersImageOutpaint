@@ -164,7 +164,7 @@ class DiffusersImageOutpaint:
                 "extra_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "The extra prompt to append, describing attributes etc. you want to include in the image. Default: \"(extra_prompt), high quality, 4k\""}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 4294967295, "tooltip": "Seed used to generate different images. Fixed it to stop that or for replicate results."}),
                 "steps": ("INT", {"default": 8, "min": 1, "max": 99, "tooltip": "The number of steps used in the denoising process."}),
-                "guidance_scale": ("FLOAT", {"default": 1.50, "min": 0.00, "max": 10, "step": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
+                "guidance_scale": ("FLOAT", {"default": 1.50, "min": 1.01, "max": 10, "step": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
                 "controlnet_strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 10, "step": 0.01}),
                 "device": (["auto", "cuda", "cpu", "mps", "xpu", "meta"],{"default": "auto", "tooltip": "Device for inference, default is auto checked by comfyui"}), 
                 "dtype": (["auto","fp16","bf16","fp32", "fp8_e4m3fn", "fp8_e4m3fnuz", "fp8_e5m2", "fp8_e5m2fnuz"],{"default":"auto", "tooltip": "Model precision for inference, default is auto checked by comfyui"}),
@@ -197,6 +197,7 @@ class DiffusersImageOutpaint:
         self.controlnet_model = None
         self.keep_model_loaded = None
         self.fuse_unet = None
+        self.loaded_controlnet_name = None
 
     def sample(self, outpaint_cnet_image, seed, steps, keep_model_loaded, keep_model_device, device, dtype, base_model, controlnet, extra_prompt=None, debug=False, guidance_scale=1.5, controlnet_strength=1.0):
         cnet_image=tensor2pil(outpaint_cnet_image)
@@ -205,6 +206,8 @@ class DiffusersImageOutpaint:
         final_prompt = extra_prompt + ", high quality, 4k"
         
         base_model_path = os.path.join(models_dir, 'unet', base_model)
+        # base_model_path = r'C:\Users\pc\Desktop\RealVisXL_V5.0_Lightning_fp16'
+        # debug = True
         
         device = get_device_by_name(device, debug)
         dtype = get_dtype_by_name(dtype, debug)
@@ -253,15 +256,11 @@ class DiffusersImageOutpaint:
                 self.text_encoder_2.to('cpu')
         self.keep_model_loaded = keep_model_loaded
             
-        
-        if self.pipe == None:
+        # Set up Controlnet-Union-Promax-SDXL model
+        if self.pipe == None or self.loaded_controlnet_name != controlnet:
             # for speed up startup comfyui, import modules only when this node excuted.
             from .DiffusersImageOutpaint_Scripts.controlnet_union import ControlNetModel_Union
-            from .DiffusersImageOutpaint_Scripts.pipeline_fill_sd_xl import StableDiffusionXLFillPipeline
-            from diffusers import TCDScheduler
             from diffusers.models.model_loading_utils import load_state_dict
-
-            # Set up Controlnet-Union-Promax-SDXL model
             if debug:
                 print('\033[93m', 'Loading ControlNetModel_Union.', '\033[0m')
             config_file = os.path.join(my_dir, 'Config_Files', 'xinsir--controlnet-union-sdxl-1.0_config_promax.json')
@@ -277,6 +276,12 @@ class DiffusersImageOutpaint:
             self.controlnet_model.to(device=device, dtype=dtype)
             if debug:
                 print('\033[93m', 'ControlNetModel_Union loading completed.', '\033[0m')
+            self.loaded_controlnet_name = controlnet
+        
+        if self.pipe == None:
+            # for speed up startup comfyui, import modules only when this node excuted.
+            from .DiffusersImageOutpaint_Scripts.pipeline_fill_sd_xl import StableDiffusionXLFillPipeline
+            from diffusers import TCDScheduler
 
             # Load RealVisXL Unet pipe.
             if debug:
