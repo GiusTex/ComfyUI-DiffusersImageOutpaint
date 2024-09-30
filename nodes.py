@@ -3,14 +3,8 @@ import gc
 import os
 import numpy as np
 from PIL import Image
-
-from folder_paths import map_legacy, folder_names_and_paths
-from .controlnet_union import ControlNetModel_Union
-from .pipeline_fill_sd_xl import StableDiffusionXLFillPipeline
-from diffusers import AutoencoderKL, TCDScheduler
-from diffusers.models.model_loading_utils import load_state_dict
-
-
+from comfy import model_management
+from folder_paths import map_legacy, folder_names_and_paths, models_dir, get_filename_list, get_full_path_or_raise
 # Get the absolute path of various directories
 my_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,14 +15,14 @@ class PadImageForDiffusersOutpaint:
         return {
             "required": {
                 "image": ("IMAGE",),
-                "width": ("INT", {"default": 720, "min": 320, "max": 1536, "tooltip": "The width used for the image."}),
-                "height": ("INT", {"default": 1280, "min": 320, "max": 1536, "tooltip": "The height used for the image."}),
+                "width": ("INT", {"default": 1024, "min": 320, "max": 1536, "tooltip": "The width used for the image."}),
+                "height": ("INT", {"default": 576, "min": 320, "max": 1536, "tooltip": "The height used for the image."}),
                 "alignment": (s._alignment_options, {"tooltip": "Where the original image should be in the outpainted one"}),
             },
         }
     
     RETURN_TYPES = ("IMAGE", "MASK", "IMAGE")
-    RETURN_NAMES = ("IMAGE", "MASK", "diffuser_outpaint_cnet_image")
+    RETURN_NAMES = ("IMAGE", "MASK", "outpaint_cnet_image")
     FUNCTION = "expand_image"
     CATEGORY = "DiffusersOutpaint"
     
@@ -46,6 +40,10 @@ class PadImageForDiffusersOutpaint:
         im=tensor2pil(image)
         source=im.convert('RGB')
         target_size = (width, height)
+        
+        # Raise an error.
+        if source.width == width and source.height == height:
+            raise ValueError(f'Input image size is the same as target size, resize input image or change target size.')
 
         # Upscale if source is smaller than target in both dimensions
         if source.width < target_size[0] and source.height < target_size[1]:
@@ -143,96 +141,9 @@ def get_first_folder_list(folder_name: str) -> tuple[list[str], dict[str, float]
     folder_name = map_legacy(folder_name)
     global folder_names_and_paths
     folders = folder_names_and_paths[folder_name]
-    if folder_name == "unet":
-        root_folder = folders[0][0]
-    elif folder_name == "diffusion_models":
-        root_folder = folders[0][1]
+    root_folder = folders[0][0]
     visible_folders = [name for name in os.listdir(root_folder) if os.path.isdir(os.path.join(root_folder, name))]
     return visible_folders
-
-
-class LoadDiffusersOutpaintModels:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "model": (get_first_folder_list("diffusion_models"), {"default": "RealVisXL_V5.0_Lightning", "tooltip": "The diffuser model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
-                "vae": (get_first_folder_list("diffusion_models"), {"default": "sdxl-vae-fp16-fix", "tooltip": "The vae model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
-                "controlnet_model": (get_first_folder_list("diffusion_models"), {"default": "controlnet-union-sdxl-1.0", "tooltip": "The controlnet model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
-            },
-            "optional": {
-                "enable_vae_slicing": ("BOOLEAN", {"default": True, "tooltip": "VAE will split the input tensor in slices to compute decoding in several steps. This is useful to save some memory and allow larger batch sizes."}),
-                "enable_vae_tiling": ("BOOLEAN", {"default": False, "tooltip": "Drastically reduces memory use but may introduce seams"}),
-            },
-        }
-
-    RETURN_TYPES = ("PIPE",)
-    RETURN_NAMES = ("diffusers_outpaint_pipe",)
-    FUNCTION = "load"
-    CATEGORY = "DiffusersOutpaint"
-   
-    def load(self, model, vae, controlnet_model, enable_vae_slicing, enable_vae_tiling):
-        # Go 2 folders back
-        comfy_dir = os.path.dirname(os.path.dirname(my_dir))
-        
-        model_path = f"{comfy_dir}/models/diffusion_models/{model}"
-        vae_path = f"{comfy_dir}/models/diffusion_models/{vae}"
-        controlnet_path = f"{comfy_dir}/models/diffusion_models/{controlnet_model}"
-        #-----------------------------------------------------------------------
-
-        # Set up Controlnet-Union-Promax-SDXL model
-        config_file = f"{controlnet_path}/config_promax.json"
-        config = ControlNetModel_Union.load_config(config_file)
-        controlnet_model = ControlNetModel_Union.from_config(config)
-
-        model_file = f"{controlnet_path}/diffusion_pytorch_model_promax.safetensors"
-        state_dict = load_state_dict(model_file)
-
-        model, _, _, _, _ = ControlNetModel_Union._load_pretrained_model(
-            controlnet_model, state_dict, model_file, f"{controlnet_path}"
-        )
-        model.to(device="cuda", dtype=torch.float16)
-        #-----------------------------------------------------------------------
-
-        # Set up VAE
-        vae = AutoencoderKL.from_pretrained(f"{vae_path}", torch_dtype=torch.float16).to("cuda")
-        
-        if enable_vae_slicing:
-            vae.enable_slicing()
-        else:
-            vae.disable_slicing()
-        
-        if enable_vae_tiling:
-            vae.enable_tiling()
-        else:
-            vae.disable_tiling()
-        #-----------------------------------------------------------------------
-
-        # Load Controlnet + Vae into RealVisXL model
-        pipe = StableDiffusionXLFillPipeline.from_pretrained(
-            f"{model_path}",
-            torch_dtype=torch.float16,
-            vae=vae,
-            controlnet=controlnet_model,
-            variant="fp16"
-        )
-        
-        pipe.scheduler = TCDScheduler.from_config(pipe.scheduler.config)
-        pipe.enable_model_cpu_offload()
-
-        del model, state_dict, model_file
-        gc.collect()
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
-
-        diffusers_outpaint_pipe = {
-            "pipe": pipe,
-            "vae": vae,
-            "controlnet_model": controlnet_model
-        }
-
-        return (diffusers_outpaint_pipe,)
-
 
 # Tensor to PIL (grabbed from WAS Suite)
 def tensor2pil(image: torch.Tensor) -> Image.Image:
@@ -242,96 +153,241 @@ def tensor2pil(image: torch.Tensor) -> Image.Image:
 def pil2tensor(image: Image.Image) -> torch.Tensor:
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
 
-class EncodeDiffusersOutpaintPrompt:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "diffusers_outpaint_pipe": ("PIPE", {"tooltip": "Load the diffusers outpaint models."}),
-                "extra_prompt": ("STRING", {"default": "", "tooltip": "The extra prompt to append, describing attributes etc. you want to include in the image. Default: \"(extra_prompt), high quality, 4k\""}),
-            }
-        }
-
-    RETURN_TYPES = ("PIPE","CONDITIONING",)
-    RETURN_NAMES = ("diffusers_outpaint_pipe","diffusers_outpaint_conditioning",)
-    FUNCTION = "sample"
-    CATEGORY = "DiffusersOutpaint"
-
-    def sample(self, diffusers_outpaint_pipe, extra_prompt=None):
-        pipe = diffusers_outpaint_pipe["pipe"]
-        
-        final_prompt = f"{extra_prompt}, high quality, 4k"
-        
-        (prompt_embeds,
-         negative_prompt_embeds,
-         pooled_prompt_embeds,
-         negative_pooled_prompt_embeds,
-        ) = pipe.encode_prompt(final_prompt)
-        
-        diffusers_outpaint_conditioning = {
-            "prompt_embeds": prompt_embeds,
-            "negative_prompt_embeds": negative_prompt_embeds,
-            "pooled_prompt_embeds": pooled_prompt_embeds,
-            "negative_pooled_prompt_embeds": negative_pooled_prompt_embeds
-        }
-        
-        del pipe.text_encoder, pipe.text_encoder_2, pipe.tokenizer, pipe.tokenizer_2
-        gc.collect()
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
-        # Update pipe
-        diffusers_outpaint_pipe["pipe"] = pipe
-
-        return (diffusers_outpaint_pipe,diffusers_outpaint_conditioning,)
-
-
 class DiffusersImageOutpaint:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "diffusers_outpaint_pipe": ("PIPE", {"tooltip": "Load the diffusers outpaint models."}),
-                "diffusers_outpaint_conditioning": ("CONDITIONING", {"tooltip": "The prompt describing what you want."}),
-                "diffuser_outpaint_cnet_image": ("IMAGE", {"tooltip": "The image to outpaint."}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "Fake seed, workaround used to keep generating different outpaints. Set to -1 to generate different images, or a fixed number to stop that."}),
-                "steps": ("INT", {"default": 8, "min": 4, "max": 20, "tooltip": "The number of steps used in the denoising process."}),
+                "outpaint_cnet_image": ("IMAGE", {"tooltip": "The image to outpaint."}),
+                "base_model": (get_first_folder_list("unet"), {"tooltip": "The diffuser model used for denoising the input latent. (Put model files in the unet folder)."}),
+                "controlnet": (get_filename_list("controlnet"), {"tooltip": "The controlnet model used for denoising the input latent.(Put model files in the controlnet folder)."}),
+                "extra_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "The extra prompt to append, describing attributes etc. you want to include in the image. Default: \"(extra_prompt), high quality, 4k\""}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 4294967295, "tooltip": "Seed used to generate different images. Fixed it to stop that or for replicate results."}),
+                "steps": ("INT", {"default": 8, "min": 1, "max": 99, "tooltip": "The number of steps used in the denoising process."}),
+                "guidance_scale": ("FLOAT", {"default": 1.50, "min": 1.01, "max": 10, "step": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
+                "controlnet_strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 10, "step": 0.01}),
+                "device": (["auto", "cuda", "cpu", "mps", "xpu", "meta"],{"default": "auto", "tooltip": "Device for inference, default is auto checked by comfyui"}), 
+                "dtype": (["auto","fp16","bf16","fp32", "fp8_e4m3fn", "fp8_e4m3fnuz", "fp8_e5m2", "fp8_e5m2fnuz"],{"default":"auto", "tooltip": "Model precision for inference, default is auto checked by comfyui"}),
+                "keep_model_loaded": ("BOOLEAN", {"default": False, "label_on": "yes", "label_off": "no", "tooltip": "Set to false to unload all diffusion models."}),
+                "keep_model_device": ("BOOLEAN", {"default": True, "label_on": "cpu", "label_off": "device", "tooltip": "If set to device such as cuda, need at least 8gb vram to hold unet + controlnet + vae. If false all models will move to ram, only 1 model will in vram at the same time, useful for under 8gb."}),
+                # "debug": ("BOOLEAN", {"default": False, "label_on": "yes", "label_off": "no", "tooltip": "Show debug info."}),
             }
         }
 
-    RETURN_TYPES = ("IMAGE",)
+    # RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = ("LATENT",)
+    RETURN_NAMES = ("latent", )
     FUNCTION = "sample"
     CATEGORY = "DiffusersOutpaint"
+    
+    def __init__(self) -> None:
+        self.prompt_embeds = None
+        self.negative_prompt_embeds = None
+        self.pooled_prompt_embeds = None
+        self.negative_pooled_prompt_embeds = None
+        self.cnet_img = None
+        self.pipe = None
+        self.state_dict = None
+        self.model = None
+        self.tokenizer = None
+        self.tokenizer_2 = None
+        self.text_encoder = None
+        self.text_encoder_2 = None
+        self.loaded_prompt = None
+        self.controlnet_model = None
+        self.fuse_unet = None
+        self.loaded_controlnet_name = None
+        self.loaded_base_model_name = None
 
-    def sample(self, diffusers_outpaint_pipe, diffusers_outpaint_conditioning, diffuser_outpaint_cnet_image, seed, steps):
-        # I have to save them here to cache them. The node doesn't load them again
-        pipe = diffusers_outpaint_pipe["pipe"]
-        vae = diffusers_outpaint_pipe["vae"]
-        controlnet_model = diffusers_outpaint_pipe["controlnet_model"]
-        prompt_embeds = diffusers_outpaint_conditioning["prompt_embeds"]
-        negative_prompt_embeds = diffusers_outpaint_conditioning["negative_prompt_embeds"]
-        pooled_prompt_embeds = diffusers_outpaint_conditioning["pooled_prompt_embeds"]
-        negative_pooled_prompt_embeds = diffusers_outpaint_conditioning["negative_pooled_prompt_embeds"]
-
-        cnet_image = diffuser_outpaint_cnet_image
-        cnet_image=tensor2pil(cnet_image)
+    def sample(self, outpaint_cnet_image, seed, steps, keep_model_loaded, keep_model_device, device, dtype, base_model, controlnet, extra_prompt=None, debug=False, guidance_scale=1.5, controlnet_strength=1.0):
+        cnet_image=tensor2pil(outpaint_cnet_image)
         cnet_image=cnet_image.convert('RGB')
         
-        generated_images = list(pipe(
-            prompt_embeds=prompt_embeds,
-            negative_prompt_embeds=negative_prompt_embeds,
-            pooled_prompt_embeds=pooled_prompt_embeds,
-            negative_pooled_prompt_embeds=negative_pooled_prompt_embeds,
+        final_prompt = extra_prompt + ", high quality, 4k"
+        
+        base_model_path = os.path.join(models_dir, 'unet', base_model)
+        # base_model_path = r'C:\Users\pc\Desktop\RealVisXL_V5.0_Lightning_fp16'
+        # debug = True
+        
+        device = get_device_by_name(device, debug)
+        dtype = get_dtype_by_name(dtype, debug)
+        
+        if self.loaded_prompt == None or self.loaded_prompt != final_prompt:
+            if self.pipe == None:
+                from transformers import AutoTokenizer
+                from transformers import CLIPTextModel
+                from transformers import CLIPTextModelWithProjection
+                from .DiffusersImageOutpaint_Scripts.pipeline_fill_sd_xl import encode_prompt
+                
+                if debug:
+                    print('\033[93m', 'Loading text_encoders.', '\033[0m')
+                self.tokenizer = AutoTokenizer.from_pretrained(base_model_path, subfolder='tokenizer', use_fast=False)
+                self.tokenizer_2 = AutoTokenizer.from_pretrained(base_model_path, subfolder='tokenizer_2', use_fast=False)
+                self.text_encoder = CLIPTextModel.from_pretrained(base_model_path, subfolder='text_encoder', torch_dtype=dtype).requires_grad_(False).to(device)
+                self.text_encoder_2 = CLIPTextModelWithProjection.from_pretrained(base_model_path, subfolder='text_encoder_2', torch_dtype=dtype).requires_grad_(False).to(device)
+                if debug:
+                    print('\033[93m', 'Text_encoders loading completed.', '\033[0m')
+            else:
+                self.text_encoder.to(device)
+                self.text_encoder_2.to(device)
+            
+            (self.prompt_embeds,
+            self.negative_prompt_embeds,
+            self.pooled_prompt_embeds,
+            self.negative_pooled_prompt_embeds,
+            ) = encode_prompt(self.tokenizer, self.tokenizer_2, self.text_encoder, self.text_encoder_2, final_prompt, device, True)
+            if debug:
+                print('\033[93m', 'Prompt encoded.', '\033[0m')
+        self.loaded_prompt = final_prompt
+                
+        if not keep_model_loaded:
+            del self.text_encoder, self.text_encoder_2, self.tokenizer, self.tokenizer_2
+            self.text_encoder = None
+            self.text_encoder_2 = None
+            self.tokenizer = None
+            self.tokenizer_2 = None
+            if debug:
+                print('\033[93m', 'Delete text_encoders to release vram.', '\033[0m')
+            gc.collect()
+            torch.cuda.empty_cache()
+        else:
+            if self.tokenizer != None:
+                self.text_encoder.to('cpu')
+                self.text_encoder_2.to('cpu')
+            
+        # Set up Controlnet-Union-Promax-SDXL model
+        if self.pipe == None or self.loaded_controlnet_name != controlnet:
+            # for speed up startup comfyui, import modules only when this node excuted.
+            from .DiffusersImageOutpaint_Scripts.controlnet_union import ControlNetModel_Union
+            from diffusers.models.model_loading_utils import load_state_dict
+            if debug:
+                print('\033[93m', 'Loading ControlNetModel_Union.', '\033[0m')
+            config_file = os.path.join(my_dir, 'Config_Files', 'xinsir--controlnet-union-sdxl-1.0_config_promax.json')
+            config = ControlNetModel_Union.load_config(config_file)
+            self.controlnet_model = ControlNetModel_Union.from_config(config)
+            
+            controlnet_model_file = get_full_path_or_raise('controlnet', controlnet)
+            self.state_dict = load_state_dict(controlnet_model_file)
+
+            self.model, _, _, _, _ = ControlNetModel_Union._load_pretrained_model(
+                self.controlnet_model, self.state_dict, controlnet_model_file, 'Any String'
+            )
+            self.controlnet_model.to(device=device, dtype=dtype)
+            if debug:
+                print('\033[93m', 'ControlNetModel_Union loading completed.', '\033[0m')
+            self.loaded_controlnet_name = controlnet
+        
+        if self.pipe == None or self.loaded_base_model_name != base_model_path:
+            # for speed up startup comfyui, import modules only when this node excuted.
+            from .DiffusersImageOutpaint_Scripts.pipeline_fill_sd_xl import StableDiffusionXLFillPipeline
+            from diffusers import TCDScheduler
+
+            # Load RealVisXL Unet pipe.
+            if debug:
+                print('\033[93m', 'Loading StableDiffusionXLFillPipeline.', '\033[0m')
+            self.pipe = StableDiffusionXLFillPipeline.from_pretrained(
+                base_model_path,
+                torch_dtype=dtype,
+                variant="fp16",
+            )
+            if not keep_model_device:
+                self.pipe.to(device)
+            self.loaded_base_model_name = base_model_path
+            
+            # set up scheduler.
+            self.pipe.scheduler = TCDScheduler.from_config(self.pipe.scheduler.config)
+            if debug:
+                print('\033[93m', 'StableDiffusionXLFillPipeline loading completed.', '\033[0m')
+        
+        from pytorch_lightning import seed_everything
+        seed_everything(seed)
+        
+        self.cnet_img = cnet_image
+
+        generated_images = list(self.pipe(
+            prompt_embeds=self.prompt_embeds,
+            negative_prompt_embeds=self.negative_prompt_embeds,
+            pooled_prompt_embeds=self.pooled_prompt_embeds,
+            negative_pooled_prompt_embeds=self.negative_pooled_prompt_embeds,
             image=cnet_image,
-            num_inference_steps=steps
+            num_inference_steps=steps,
+            keep_model_loaded=keep_model_loaded,
+            controlnet_model=self.controlnet_model,
+            debug=debug,
+            controlnet_conditioning_scale=controlnet_strength,
+            guidance_scale=guidance_scale,
+            device=device,
+            keep_model_device=keep_model_device,
         ))
         
-        del pipe, vae, controlnet_model, prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds
-        gc.collect()
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
+        if keep_model_device:
+            self.controlnet_model.to(device)
+        
+        if not keep_model_loaded:
+            del self.state_dict
+            del self.model
+            del self.pipe
+            del self.controlnet_model
+            self.state_dict = None
+            self.model = None
+            self.pipe = None
+            self.controlnet_model = None
+            gc.collect()
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+        else:
+            if keep_model_device:
+                self.controlnet_model.to('cpu')
 
-        last_image = generated_images[-1] # Access the last image
-        image = last_image.convert("RGB")
-        output=pil2tensor(image)
+        # last_image = generated_images[-1] # Access the last image
+        # image = last_image.convert("RGBA")
+        # output=pil2tensor(image)
+        output = generated_images[-1]
         
         return (output,)
+    
+def get_device_by_name(device, debug: bool=False):
+    """
+    Args:
+        "device": (["auto", "cuda", "cpu", "mps", "xpu", "meta", "directml"],{"default": "auto"}), 
+    """
+    if device == 'auto':
+        try:
+            device = model_management.get_torch_device()
+        except:
+                raise AttributeError("What's your device(到底用什么设备跑的)？")
+    if debug:
+        print("\033[93mUse Device(使用设备):", device, "\033[0m")
+    return device
+
+def get_dtype_by_name(dtype, debug: bool=False):
+    """
+    "dtype": (["auto","fp16","bf16","fp32", "fp8_e4m3fn", "fp8_e4m3fnuz", "fp8_e5m2", "fp8_e5m2fnuz"],{"default":"auto"}),返回模型精度选择。
+    """
+    if dtype == 'auto':
+        try:
+            if model_management.should_use_fp16():
+                dtype = torch.float16
+            elif model_management.should_use_bf16():
+                dtype = torch.bfloat16
+            else:
+                dtype = torch.float32
+        except:
+                raise AttributeError("ComfyUI version too old, can't autodetect properly. Set your dtypes manually.")
+    elif dtype== "fp16":
+         dtype = torch.float16
+    elif dtype == "bf16":
+        dtype = torch.bfloat16
+    elif dtype == "fp32":
+        dtype = torch.float32
+    elif dtype == "fp8_e4m3fn":
+        dtype = torch.float8_e4m3fn
+    elif dtype == "fp8_e4m3fnuz":
+        dtype = torch.float8_e4m3fnuz
+    elif dtype == "fp8_e5m2":
+        dtype = torch.float8_e5m2
+    elif dtype == "fp8_e5m2fnuz":
+        dtype = torch.float8_e5m2fnuz
+    if debug:
+        print("\033[93mModel Precision(模型精度):", dtype, "\033[0m")
+    return dtype
