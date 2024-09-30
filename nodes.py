@@ -195,7 +195,6 @@ class DiffusersImageOutpaint:
         self.text_encoder_2 = None
         self.loaded_prompt = None
         self.controlnet_model = None
-        self.keep_model_loaded = None
         self.fuse_unet = None
         self.loaded_controlnet_name = None
         self.loaded_base_model_name = None
@@ -214,7 +213,7 @@ class DiffusersImageOutpaint:
         dtype = get_dtype_by_name(dtype, debug)
         
         if self.loaded_prompt == None or self.loaded_prompt != final_prompt:
-            if self.tokenizer == None or self.keep_model_loaded == False:
+            if self.pipe == None:
                 from transformers import AutoTokenizer
                 from transformers import CLIPTextModel
                 from transformers import CLIPTextModelWithProjection
@@ -255,7 +254,6 @@ class DiffusersImageOutpaint:
             if self.tokenizer != None:
                 self.text_encoder.to('cpu')
                 self.text_encoder_2.to('cpu')
-        self.keep_model_loaded = keep_model_loaded
             
         # Set up Controlnet-Union-Promax-SDXL model
         if self.pipe == None or self.loaded_controlnet_name != controlnet:
