@@ -40,6 +40,8 @@ class PadImageForDiffusersOutpaint:
         im=tensor2pil(image)
         source=im.convert('RGB')
         target_size = (width, height)
+        
+        # Raise an error.
         if source.width == width and source.height == height:
             raise ValueError(f'Input image size is the same as target size, resize input image or change target size.')
 
