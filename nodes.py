@@ -198,6 +198,7 @@ class DiffusersImageOutpaint:
         self.keep_model_loaded = None
         self.fuse_unet = None
         self.loaded_controlnet_name = None
+        self.loaded_base_model_name = None
 
     def sample(self, outpaint_cnet_image, seed, steps, keep_model_loaded, keep_model_device, device, dtype, base_model, controlnet, extra_prompt=None, debug=False, guidance_scale=1.5, controlnet_strength=1.0):
         cnet_image=tensor2pil(outpaint_cnet_image)
@@ -278,7 +279,7 @@ class DiffusersImageOutpaint:
                 print('\033[93m', 'ControlNetModel_Union loading completed.', '\033[0m')
             self.loaded_controlnet_name = controlnet
         
-        if self.pipe == None:
+        if self.pipe == None or self.loaded_base_model_name != base_model_path:
             # for speed up startup comfyui, import modules only when this node excuted.
             from .DiffusersImageOutpaint_Scripts.pipeline_fill_sd_xl import StableDiffusionXLFillPipeline
             from diffusers import TCDScheduler
@@ -293,6 +294,7 @@ class DiffusersImageOutpaint:
             )
             if not keep_model_device:
                 self.pipe.to(device)
+            self.loaded_base_model_name = base_model_path
             
             # set up scheduler.
             self.pipe.scheduler = TCDScheduler.from_config(self.pipe.scheduler.config)
