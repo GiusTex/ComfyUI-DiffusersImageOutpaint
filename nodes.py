@@ -274,13 +274,6 @@ class EncodeDiffusersOutpaintPrompt:
             "pooled_prompt_embeds": pooled_prompt_embeds,
             "negative_pooled_prompt_embeds": negative_pooled_prompt_embeds
         }
-        
-        del pipe.text_encoder, pipe.text_encoder_2, pipe.tokenizer, pipe.tokenizer_2
-        gc.collect()
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
-        # Update pipe
-        diffusers_outpaint_pipe["pipe"] = pipe
 
         return (diffusers_outpaint_pipe,diffusers_outpaint_conditioning,)
 
