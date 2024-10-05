@@ -60,6 +60,12 @@ class PadImageForDiffusersOutpaint:
             new_height = int(source.height * scale_factor)
             source = source.resize((new_width, new_height), Image.LANCZOS)
 
+        if source.width == target_size[0] and source.height != target_size[1]:
+            scale_factor = min(target_size[0] / source.width, target_size[1] / source.height)
+            new_width = target_size[0]
+            new_height = int(source.height * scale_factor)
+            source = source.resize((new_width, new_height), Image.LANCZOS)
+
         if not can_expand(source.width, source.height, target_size[0], target_size[1], alignment):
             alignment = "Middle"
         # Calculate margins based on alignment
