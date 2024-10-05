@@ -1,0 +1,662 @@
+{
+  "last_node_id": 648,
+  "last_link_id": 1190,
+  "nodes": [
+    {
+      "id": 402,
+      "type": "GetImageSizeAndCount",
+      "pos": {
+        "0": 960,
+        "1": 60
+      },
+      "size": {
+        "0": 210,
+        "1": 90
+      },
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1168
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            679
+          ],
+          "slot_index": 0,
+          "shape": 3
+        },
+        {
+          "name": "720 width",
+          "type": "INT",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "480 height",
+          "type": "INT",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "1 count",
+          "type": "INT",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetImageSizeAndCount"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 638,
+      "type": "DiffusersImageOutpaint",
+      "pos": {
+        "0": 620,
+        "1": 150
+      },
+      "size": {
+        "0": 320.79998779296875,
+        "1": 166
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 1170
+        },
+        {
+          "name": "diffusers_outpaint_conditioning",
+          "type": "CONDITIONING",
+          "link": 1171
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "link": 1173
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1168
+          ],
+          "slot_index": 0,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DiffusersImageOutpaint"
+      },
+      "widgets_values": [
+        602182908713799,
+        "randomize",
+        8
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 639,
+      "type": "EncodeDiffusersOutpaintPrompt",
+      "pos": {
+        "0": 130,
+        "1": 150
+      },
+      "size": {
+        "0": 463.6000061035156,
+        "1": 80
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 1169
+        }
+      ],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [
+            1170
+          ],
+          "shape": 3
+        },
+        {
+          "name": "diffusers_outpaint_conditioning",
+          "type": "CONDITIONING",
+          "links": [
+            1171
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EncodeDiffusersOutpaintPrompt"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 637,
+      "type": "LoadDiffusersOutpaintModels",
+      "pos": {
+        "0": -270,
+        "1": 120
+      },
+      "size": {
+        "0": 370,
+        "1": 180
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [
+            1169
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadDiffusersOutpaintModels"
+      },
+      "widgets_values": [
+        "RealVisXL_V5.0_Lightning",
+        "sdxl-vae-fp16-fix",
+        "controlnet-union-sdxl-1.0",
+        false,
+        false
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 579,
+      "type": "VAEEncodeForInpaint",
+      "pos": {
+        "0": 650,
+        "1": -110
+      },
+      "size": {
+        "0": 230,
+        "1": 100
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "IMAGE",
+          "link": 1187
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 1182
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 1186
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            1081
+          ],
+          "slot_index": 0,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEEncodeForInpaint"
+      },
+      "widgets_values": [
+        6
+      ]
+    },
+    {
+      "id": 582,
+      "type": "KSampler",
+      "pos": {
+        "0": 930,
+        "1": -310
+      },
+      "size": {
+        "0": 315,
+        "1": 262
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 1081
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            1188
+          ],
+          "slot_index": 0,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        869424055413749,
+        "randomize",
+        8,
+        2,
+        "euler",
+        "normal",
+        1
+      ]
+    },
+    {
+      "id": 646,
+      "type": "VAELoader",
+      "pos": {
+        "0": 290,
+        "1": -130
+      },
+      "size": {
+        "0": 315,
+        "1": 58
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 2,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            1182,
+            1189
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "sdxl_vae.safetensors"
+      ]
+    },
+    {
+      "id": 351,
+      "type": "PreviewImage",
+      "pos": {
+        "0": 1190,
+        "1": 50
+      },
+      "size": {
+        "0": 510,
+        "1": 490
+      },
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 679
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 648,
+      "type": "PreviewImage",
+      "pos": {
+        "0": 1520,
+        "1": -490
+      },
+      "size": {
+        "0": 510,
+        "1": 490
+      },
+      "flags": {},
+      "order": 11,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1190
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 647,
+      "type": "VAEDecode",
+      "pos": {
+        "0": 1280,
+        "1": -320
+      },
+      "size": {
+        "0": 210,
+        "1": 46
+      },
+      "flags": {},
+      "order": 9,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 1188
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 1189
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1190
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      }
+    },
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": {
+        "0": -220,
+        "1": 350
+      },
+      "size": [
+        320,
+        310
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1172
+          ],
+          "slot_index": 0,
+          "shape": 3
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [],
+          "slot_index": 1,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "illust_118654210_20240921_115326.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 640,
+      "type": "PadImageForDiffusersOutpaint",
+      "pos": {
+        "0": 290,
+        "1": 300
+      },
+      "size": {
+        "0": 290,
+        "1": 150
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1172
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1187
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            1186
+          ],
+          "shape": 3,
+          "slot_index": 1
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "links": [
+            1173
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PadImageForDiffusersOutpaint"
+      },
+      "widgets_values": [
+        1280,
+        720,
+        "Middle"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    }
+  ],
+  "links": [
+    [
+      679,
+      402,
+      0,
+      351,
+      0,
+      "IMAGE"
+    ],
+    [
+      1081,
+      579,
+      0,
+      582,
+      3,
+      "LATENT"
+    ],
+    [
+      1168,
+      638,
+      0,
+      402,
+      0,
+      "IMAGE"
+    ],
+    [
+      1169,
+      637,
+      0,
+      639,
+      0,
+      "PIPE"
+    ],
+    [
+      1170,
+      639,
+      0,
+      638,
+      0,
+      "PIPE"
+    ],
+    [
+      1171,
+      639,
+      1,
+      638,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      1172,
+      1,
+      0,
+      640,
+      0,
+      "IMAGE"
+    ],
+    [
+      1173,
+      640,
+      2,
+      638,
+      2,
+      "IMAGE"
+    ],
+    [
+      1182,
+      646,
+      0,
+      579,
+      1,
+      "VAE"
+    ],
+    [
+      1186,
+      640,
+      1,
+      579,
+      2,
+      "MASK"
+    ],
+    [
+      1187,
+      640,
+      0,
+      579,
+      0,
+      "IMAGE"
+    ],
+    [
+      1188,
+      582,
+      0,
+      647,
+      0,
+      "LATENT"
+    ],
+    [
+      1189,
+      646,
+      0,
+      647,
+      1,
+      "VAE"
+    ],
+    [
+      1190,
+      647,
+      0,
+      648,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6588450000000002,
+      "offset": [
+        321.21742266599995,
+        354.6339459228647
+      ]
+    }
+  },
+  "version": 0.4
+}
