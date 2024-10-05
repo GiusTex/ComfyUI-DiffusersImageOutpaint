@@ -1,6 +1,7 @@
 ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-outpaint](https://huggingface.co/spaces/fffiloni/diffusers-image-outpaint/tree/main) by fffiloni.
 
-![DiffusersImageOutpaint-Nodes-Screen](https://github.com/user-attachments/assets/df6ee871-08ab-4e34-b47e-410673a026ed)
+![Extension overview](https://github.com/user-attachments/assets/50a6b731-f418-478f-a494-ad10afe8ec70)
+
 
 ## Installation
 - Download this extension or `git clone` it in comfyui/custom_nodes, then (if comfyui-manager didn't already install the requirements or you have missing modules), from comfyui virtual env write `cd your/path/to/this/extension` and `pip install -r requirements.txt`.
