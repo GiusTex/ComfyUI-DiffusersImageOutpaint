@@ -47,6 +47,13 @@ class PadImageForDiffusersOutpaint:
         source=im.convert('RGB')
         target_size = (width, height)
 
+        # Raise an error.
+        if source.width == width and source.height == height:
+            raise ValueError(f'Input image size is the same as target size, resize input image or change target size.')
+        
+        # Initialize new_width and new_height
+        new_width, new_height = source.width, source.height
+
         # Upscale if source is smaller than target in both dimensions
         if source.width < target_size[0] and source.height < target_size[1]:
             scale_factor = min(target_size[0] / source.width, target_size[1] / source.height)
@@ -57,12 +64,6 @@ class PadImageForDiffusersOutpaint:
         if source.width > target_size[0] or source.height > target_size[1]:
             scale_factor = min(target_size[0] / source.width, target_size[1] / source.height)
             new_width = int(source.width * scale_factor)
-            new_height = int(source.height * scale_factor)
-            source = source.resize((new_width, new_height), Image.LANCZOS)
-
-        if source.width == target_size[0] and source.height != target_size[1]:
-            scale_factor = min(target_size[0] / source.width, target_size[1] / source.height)
-            new_width = target_size[0]
             new_height = int(source.height * scale_factor)
             source = source.resize((new_width, new_height), Image.LANCZOS)
 
