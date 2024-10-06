@@ -3,7 +3,7 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 ![DiffusersImageOutpaint-Nodes-Screen](https://github.com/user-attachments/assets/2722e07c-1d6a-416e-a9d8-f26aaa9a45a7)
 
 #### Update:
-- You don't need any more the diffusers vae, and can use the extension in low vram mode using `sequential_cpu_offload` (also thanks to [zmwv823](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/pull/4)) that pushes the vram usage from *8,3 gb* down to **6 gb**.
+- You don't need any more the diffusers vae, and can use the extension in low vram mode using `sequential_cpu_offload` (also thanks to [zmwv823](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/pull/4)) that pushes the vram usage from *8,3 gb* down to **_6 gb_**.
 - If your `text_encoder` and `text_encoder_2` names contain `.fp16.` or other things before `safetensors`, you need to remove it (see the table below).
 
 ## Installation
