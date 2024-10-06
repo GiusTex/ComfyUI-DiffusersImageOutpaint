@@ -17,13 +17,12 @@ from typing import List, Optional, Union
 import cv2
 import PIL.Image
 import torch
-import torch.nn.functional as F
+import gc
 from diffusers.image_processor import PipelineImageInput, VaeImageProcessor
 from diffusers.models import AutoencoderKL, UNet2DConditionModel
 from diffusers.pipelines.pipeline_utils import DiffusionPipeline, StableDiffusionMixin
 from diffusers.schedulers import KarrasDiffusionSchedulers
 from diffusers.utils.torch_utils import randn_tensor
-from transformers import CLIPTextModel, CLIPTextModelWithProjection, CLIPTokenizer
 
 from .controlnet_union import ControlNetModel_Union
 from comfy.utils import ProgressBar
@@ -68,60 +67,15 @@ def retrieve_timesteps(
     return timesteps, num_inference_steps
 
 
-class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
-    model_cpu_offload_seq = "text_encoder->text_encoder_2->unet->vae"
-    _optional_components = [
-        "tokenizer",
-        "tokenizer_2",
-        "text_encoder",
-        "text_encoder_2",
-    ]
-
-    def __init__(
-        self,
-        vae: AutoencoderKL,
-        text_encoder: CLIPTextModel,
-        text_encoder_2: CLIPTextModelWithProjection,
-        tokenizer: CLIPTokenizer,
-        tokenizer_2: CLIPTokenizer,
-        unet: UNet2DConditionModel,
-        controlnet: ControlNetModel_Union,
-        scheduler: KarrasDiffusionSchedulers,
-        force_zeros_for_empty_prompt: bool = True,
-    ):
-        super().__init__()
-
-        self.register_modules(
-            vae=vae,
-            text_encoder=text_encoder,
-            text_encoder_2=text_encoder_2,
-            tokenizer=tokenizer,
-            tokenizer_2=tokenizer_2,
-            unet=unet,
-            controlnet=controlnet,
-            scheduler=scheduler,
-        )
-        self.vae_scale_factor = 2 ** (len(self.vae.config.block_out_channels) - 1)
-        self.image_processor = VaeImageProcessor(
-            vae_scale_factor=self.vae_scale_factor, do_convert_rgb=True
-        )
-        self.control_image_processor = VaeImageProcessor(
-            vae_scale_factor=self.vae_scale_factor,
-            do_convert_rgb=True,
-            do_normalize=False,
-        )
-
-        self.register_to_config(
-            force_zeros_for_empty_prompt=force_zeros_for_empty_prompt
-        )
-
-    def encode_prompt(
-        self,
+def encode_prompt(
         prompt: str,
+        tokenizer: None,
+        tokenizer_2: None,
+        text_encoder: None,
+        text_encoder_2: None,
         device: Optional[torch.device] = None,
         do_classifier_free_guidance: bool = True,
     ):
-        device = device or self._execution_device
         prompt = [prompt] if isinstance(prompt, str) else prompt
 
         if prompt is not None:
@@ -129,14 +83,14 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
 
         # Define tokenizers and text encoders
         tokenizers = (
-            [self.tokenizer, self.tokenizer_2]
-            if self.tokenizer is not None
-            else [self.tokenizer_2]
+            [tokenizer, tokenizer_2]
+            if tokenizer is not None
+            else [tokenizer_2]
         )
         text_encoders = (
-            [self.text_encoder, self.text_encoder_2]
-            if self.text_encoder is not None
-            else [self.text_encoder_2]
+            [text_encoder, text_encoder_2]
+            if text_encoder is not None
+            else [text_encoder_2]
         )
 
         prompt_2 = prompt
@@ -218,7 +172,7 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
                     truncation=True,
                     return_tensors="pt",
                 )
-
+                
                 negative_prompt_embeds = text_encoder(
                     uncond_input.input_ids.to(device),
                     output_hidden_states=True,
@@ -231,7 +185,7 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
 
             negative_prompt_embeds = torch.concat(negative_prompt_embeds_list, dim=-1)
 
-        prompt_embeds = prompt_embeds.to(dtype=self.text_encoder_2.dtype, device=device)
+        prompt_embeds = prompt_embeds.to(dtype=text_encoder_2.dtype, device=device)
 
         bs_embed, seq_len, _ = prompt_embeds.shape
         # duplicate text embeddings for each generation per prompt, using mps friendly method
@@ -242,13 +196,13 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
             # duplicate unconditional embeddings for each generation per prompt, using mps friendly method
             seq_len = negative_prompt_embeds.shape[1]
 
-            if self.text_encoder_2 is not None:
+            if text_encoder_2 is not None:
                 negative_prompt_embeds = negative_prompt_embeds.to(
-                    dtype=self.text_encoder_2.dtype, device=device
+                    dtype=text_encoder_2.dtype, device=device
                 )
             else:
                 negative_prompt_embeds = negative_prompt_embeds.to(
-                    dtype=self.unet.dtype, device=device
+                    dtype=torch.float16, device=device
                 )
 
             negative_prompt_embeds = negative_prompt_embeds.repeat(1, 1, 1)
@@ -269,71 +223,35 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
             negative_pooled_prompt_embeds,
         )
 
-    def check_inputs(
+
+class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
+    
+    def __init__(
         self,
-        prompt_embeds,
-        negative_prompt_embeds,
-        pooled_prompt_embeds,
-        negative_pooled_prompt_embeds,
-        image,
-        controlnet_conditioning_scale=1.0,
+        unet: UNet2DConditionModel,
+        scheduler: KarrasDiffusionSchedulers,
+        force_zeros_for_empty_prompt: bool = True,
     ):
-        if prompt_embeds is None:
-            raise ValueError(
-                "Provide `prompt_embeds`. Cannot leave `prompt_embeds` undefined."
-            )
+        super().__init__()
 
-        if negative_prompt_embeds is None:
-            raise ValueError(
-                "Provide `negative_prompt_embeds`. Cannot leave `negative_prompt_embeds` undefined."
-            )
-
-        if prompt_embeds.shape != negative_prompt_embeds.shape:
-            raise ValueError(
-                "`prompt_embeds` and `negative_prompt_embeds` must have the same shape when passed directly, but"
-                f" got: `prompt_embeds` {prompt_embeds.shape} != `negative_prompt_embeds`"
-                f" {negative_prompt_embeds.shape}."
-            )
-
-        if prompt_embeds is not None and pooled_prompt_embeds is None:
-            raise ValueError(
-                "If `prompt_embeds` are provided, `pooled_prompt_embeds` also have to be passed. Make sure to generate `pooled_prompt_embeds` from the same text encoder that was used to generate `prompt_embeds`."
-            )
-
-        if negative_prompt_embeds is not None and negative_pooled_prompt_embeds is None:
-            raise ValueError(
-                "If `negative_prompt_embeds` are provided, `negative_pooled_prompt_embeds` also have to be passed. Make sure to generate `negative_pooled_prompt_embeds` from the same text encoder that was used to generate `negative_prompt_embeds`."
-            )
-
-        # Check `image`
-        is_compiled = hasattr(F, "scaled_dot_product_attention") and isinstance(
-            self.controlnet, torch._dynamo.eval_frame.OptimizedModule
+        self.register_modules(
+            unet=unet,
+            scheduler=scheduler,
         )
-        if (
-            isinstance(self.controlnet, ControlNetModel_Union)
-            or is_compiled
-            and isinstance(self.controlnet._orig_mod, ControlNetModel_Union)
-        ):
-            if not isinstance(image, PIL.Image.Image):
-                raise TypeError(
-                    f"image must be passed and has to be a PIL image, but is {type(image)}"
-                )
 
-        else:
-            assert False
-
-        # Check `controlnet_conditioning_scale`
-        if (
-            isinstance(self.controlnet, ControlNetModel_Union)
-            or is_compiled
-            and isinstance(self.controlnet._orig_mod, ControlNetModel_Union)
-        ):
-            if not isinstance(controlnet_conditioning_scale, float):
-                raise TypeError(
-                    "For single controlnet: `controlnet_conditioning_scale` must be type `float`."
-                )
-        else:
-            assert False
+        self.vae_scale_factor = 8
+        self.image_processor = VaeImageProcessor(
+            vae_scale_factor=self.vae_scale_factor, do_convert_rgb=True
+        )
+        self.control_image_processor = VaeImageProcessor(
+            vae_scale_factor=self.vae_scale_factor,
+            do_convert_rgb=True,
+            do_normalize=False,
+        )
+        self.register_to_config(
+            force_zeros_for_empty_prompt=force_zeros_for_empty_prompt
+        )
+        self.controlnet_model = None
 
     def prepare_image(self, image, device, dtype, do_classifier_free_guidance=False):
         image = self.control_image_processor.preprocess(image).to(dtype=torch.float32)
@@ -363,7 +281,7 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
         # scale the initial noise by the standard deviation required by the scheduler
         latents = latents * self.scheduler.init_noise_sigma
         return latents
-
+    
     @property
     def guidance_scale(self):
         return self._guidance_scale
@@ -373,15 +291,18 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
     # corresponds to doing no classifier free guidance.
     @property
     def do_classifier_free_guidance(self):
-        return self._guidance_scale > 1 and self.unet.config.time_cond_proj_dim is None
+        return self._guidance_scale > 1 and self.unet.config.time_cond_proj_dim is None # UNET <----
 
     @property
     def num_timesteps(self):
         return self._num_timesteps
-
+    
     @torch.no_grad()
     def __call__(
         self,
+        controlnet_model,
+        device,
+        keep_model_device,
         prompt_embeds: torch.Tensor,
         negative_prompt_embeds: torch.Tensor,
         pooled_prompt_embeds: torch.Tensor,
@@ -391,21 +312,11 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
         guidance_scale: float = 1.5,
         controlnet_conditioning_scale: Union[float, List[float]] = 1.0,
     ):
-        # 1. Check inputs. Raise error if not correct
-        self.check_inputs(
-            prompt_embeds,
-            negative_prompt_embeds,
-            pooled_prompt_embeds,
-            negative_pooled_prompt_embeds,
-            image,
-            controlnet_conditioning_scale,
-        )
-
+        self.controlnet = controlnet_model
         self._guidance_scale = guidance_scale
 
         # 2. Define call parameters
         batch_size = 1
-        device = self._execution_device
 
         # 4. Prepare image
         if isinstance(self.controlnet, ControlNetModel_Union):
@@ -442,15 +353,14 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
         add_time_ids = negative_add_time_ids = torch.tensor(
             image.shape[-2:] + torch.Size([0, 0]) + image.shape[-2:]
         ).unsqueeze(0)
-
+        
         if self.do_classifier_free_guidance:
             prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
             add_text_embeds = torch.cat(
                 [negative_pooled_prompt_embeds, add_text_embeds], dim=0
             )
             add_time_ids = torch.cat([negative_add_time_ids, add_time_ids], dim=0)
-
-        prompt_embeds = prompt_embeds.to(device)
+        
         add_text_embeds = add_text_embeds.to(device)
         add_time_ids = add_time_ids.to(device).repeat(batch_size, 1)
 
@@ -467,12 +377,12 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
             "control_type": union_control_type,
         }
 
-        controlnet_prompt_embeds = prompt_embeds
+        controlnet_prompt_embeds = prompt_embeds.to(device)
         controlnet_added_cond_kwargs = added_cond_kwargs
 
         # 8. Denoising loop
-        ComfyUI_ProgressBar = ProgressBar(int(num_inference_steps))
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
+        ComfyUI_ProgressBar = ProgressBar(int(num_inference_steps))
 
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps):
@@ -488,7 +398,8 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
 
                 # controlnet(s) inference
                 control_model_input = latent_model_input
-
+                
+                self.controlnet.to(device)
                 down_block_res_samples, mid_block_res_sample = self.controlnet(
                     control_model_input,
                     t,
@@ -499,20 +410,31 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
                     added_cond_kwargs=controlnet_added_cond_kwargs,
                     return_dict=False,
                 )
+                
+                if keep_model_device:
+                    self.controlnet.to('cpu')
 
-                # predict the noise residual
-                noise_pred = self.unet(
-                    latent_model_input,
-                    t,
-                    encoder_hidden_states=prompt_embeds,
-                    timestep_cond=None,
-                    cross_attention_kwargs={},
-                    down_block_additional_residuals=down_block_res_samples,
-                    mid_block_additional_residual=mid_block_res_sample,
-                    added_cond_kwargs=added_cond_kwargs,
-                    return_dict=False,
-                )[0]
-
+                try:
+                    # predict the noise residual
+                    self.unet.to(device)
+                    noise_pred = self.unet(
+                        latent_model_input,
+                        t,
+                        encoder_hidden_states=prompt_embeds,
+                        timestep_cond=None,
+                        cross_attention_kwargs={},
+                        down_block_additional_residuals=down_block_res_samples,
+                        mid_block_additional_residual=mid_block_res_sample,
+                        added_cond_kwargs=added_cond_kwargs,
+                        return_dict=False,
+                    )[0]
+                    if keep_model_device:
+                        self.unet.to('cpu')
+                except torch.cuda.OutOfMemoryError as e: # free vram when OOM
+                    self.unet.to('cpu')
+                    print('\033[93m', 'Gpu is out of memory(爆显存了)!', '\033[0m')
+                    raise e
+                
                 # perform guidance
                 if self.do_classifier_free_guidance:
                     noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
@@ -550,13 +472,12 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
                 ):
                     progress_bar.update()
                     ComfyUI_ProgressBar.update(1)
-                    yield latents_to_rgb(latents)
-
-        latents = latents / self.vae.config.scaling_factor
-        image = self.vae.decode(latents, return_dict=False)[0]
-        image = self.image_processor.postprocess(image)[0]
-
-        # Offload all models
-        self.maybe_free_model_hooks()
-
-        yield image
+                    #yield latents_to_rgb(latents)
+        
+        del self.unet
+        del self.controlnet
+        gc.collect()
+        torch.cuda.empty_cache()
+        
+        latents = latents / 0.13025
+        yield latents
