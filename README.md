@@ -1,30 +1,32 @@
 ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-outpaint](https://huggingface.co/spaces/fffiloni/diffusers-image-outpaint/tree/main) by fffiloni.
 
-![Extension overview](https://github.com/user-attachments/assets/50a6b731-f418-478f-a494-ad10afe8ec70)
+![DiffusersImageOutpaint-Nodes-Screen](https://github.com/user-attachments/assets/2722e07c-1d6a-416e-a9d8-f26aaa9a45a7)
 
+#### Update:
+You don't need any more the diffusers vae, and can use the extension in low vram mode using `sequential_cpu_offload` (also thanks to [zmwv823](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/pull/4)) that pushes the vram usage from *8,3 gb* down to **6 gb**.
 
 ## Installation
 - Download this extension or `git clone` it in comfyui/custom_nodes, then (if comfyui-manager didn't already install the requirements or you have missing modules), from comfyui virtual env write `cd your/path/to/this/extension` and `pip install -r requirements.txt`.
 - Download models in the **`comfyui/models/diffusion_models`** folder, following the grid below (you can use the links to download the suggested models; you can also change the main model, but you need the specified vae and controlnet since the extension is hardcoded to use them. You can always change the code to use different models):
-  | 	**main model**	 | 	**controlnet model**	 | 	**vae model**	 |
+  | 	**main model**	 | 	**controlnet model**	 |
   | 	:-----:	 | 	:-----:	 | 	:-----:	 |
-  | 	**[Diffuser Model folder](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/tree/main)** (you can change this model)	| 	**[Diffuser Vae folder](https://huggingface.co/madebyollin/sdxl-vae-fp16-fix/tree/main)** (you need this model)	| 	**[Diffuser Controlnet folder](https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/tree/main)** (you need this model)	 |
-  | 	model_index-json	| 	config.json, sdxl_vae.safetensors	| 	config_promax.json, diffusion_pytorch_model_promax.safetensors	 |
-  | 	**Unet folder**	| | |
-  | 	config.json, diffusion_pytorch_model.fp16.safetensors	| | |
-  | 	**Scheduler folder**	| | |
-  | 	scheduler_config.json	| | |
-  | 	**Text encoder folder**	| | |
-  | 	config.json, model.fp16.safetensors	| | |
-  | 	**Text encoder 2 folder**	| | |
-  | 	config.json, model.fp16.safetensors	| | |
-  | 	**Tokenizer folder**	| | |
-  | 	merges.txt, special_tokens_map.json, tokenizer_config.json, vocab.json	| | |
-  | 	**Tokenizer 2 folder**	| | |
-  | 	merges.txt, special_tokens_map.json, tokenizer_config.json, vocab.json	| | |
+  | 	**[Diffuser Model folder](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/tree/main)** (you can change this model)	|	**[Diffuser Controlnet folder](https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/tree/main)** (you need this model)	 |
+  | 	model_index-json	|	config_promax.json, diffusion_pytorch_model_promax.safetensors	 |
+  | 	**Unet folder**	| |
+  | 	config.json, diffusion_pytorch_model.fp16.safetensors	| |
+  | 	**Scheduler folder**	| |
+  | 	scheduler_config.json	| |
+  | 	**Text encoder folder**	| |
+  | 	config.json, model.fp16.safetensors	| |
+  | 	**Text encoder 2 folder**	| |
+  | 	config.json, model.fp16.safetensors	| |
+  | 	**Tokenizer folder**	| |
+  | 	merges.txt, special_tokens_map.json, tokenizer_config.json, vocab.json	| |
+  | 	**Tokenizer 2 folder**	| |
+  | 	merges.txt, special_tokens_map.json, tokenizer_config.json, vocab.json	| |
   
 ## Overview
-**Minimum VRAM**: 8,3 gb with 1280x720 image, `vae_slicing`, rtx 3060, RealVisXL_V5.0_Lightning, sdxl-vae-fp16-fix, controlnet-union-sdxl-promax.
+**Minimum VRAM**: 6 gb with 1280x720 image, rtx 3060, RealVisXL_V5.0_Lightning, sdxl-vae-fp16-fix, controlnet-union-sdxl-promax using `sequential_cpu_offload`, otherwise 8,3 gb.
 
 The extension gives 4 nodes:
 - **Load Diffusion Outpaint Models**: a simple node to load diffusion `models`. You can download them from Huggingface (the extension doesn't download them automatically);
