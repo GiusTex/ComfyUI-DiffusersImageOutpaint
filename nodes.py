@@ -1,14 +1,8 @@
 import torch
 import gc
 import os
-import numpy as np
 from PIL import Image
-
-from folder_paths import map_legacy, folder_names_and_paths
-from .controlnet_union import ControlNetModel_Union
-from .pipeline_fill_sd_xl import StableDiffusionXLFillPipeline
-from diffusers import AutoencoderKL, TCDScheduler
-from diffusers.models.model_loading_utils import load_state_dict
+from .utils import get_first_folder_list, tensor2pil, pil2tensor, encodeDiffOutpaintPrompt, diffuserOutpaintSamples, get_device_by_name, get_dtype_by_name
 
 
 # Get the absolute path of various directories
@@ -46,7 +40,7 @@ class PadImageForDiffusersOutpaint:
         im=tensor2pil(image)
         source=im.convert('RGB')
         target_size = (width, height)
-
+        
         # Raise an error.
         if source.width == width and source.height == height:
             raise ValueError(f'Input image size is the same as target size, resize input image or change target size.')
@@ -66,7 +60,7 @@ class PadImageForDiffusersOutpaint:
             new_width = int(source.width * scale_factor)
             new_height = int(source.height * scale_factor)
             source = source.resize((new_width, new_height), Image.LANCZOS)
-
+        
         if not can_expand(source.width, source.height, target_size[0], target_size[1], alignment):
             alignment = "Middle"
         # Calculate margins based on alignment
@@ -146,30 +140,16 @@ class PadImageForDiffusersOutpaint:
         return (new_image, mask, tensor_cnet_image,)
 
 
-def get_first_folder_list(folder_name: str) -> tuple[list[str], dict[str, float], float]:
-    folder_name = map_legacy(folder_name)
-    global folder_names_and_paths
-    folders = folder_names_and_paths[folder_name]
-    if folder_name == "unet":
-        root_folder = folders[0][0]
-    elif folder_name == "diffusion_models":
-        root_folder = folders[0][1]
-    visible_folders = [name for name in os.listdir(root_folder) if os.path.isdir(os.path.join(root_folder, name))]
-    return visible_folders
-
-
 class LoadDiffusersOutpaintModels:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
                 "model": (get_first_folder_list("diffusion_models"), {"default": "RealVisXL_V5.0_Lightning", "tooltip": "The diffuser model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
-                "vae": (get_first_folder_list("diffusion_models"), {"default": "sdxl-vae-fp16-fix", "tooltip": "The vae model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
                 "controlnet_model": (get_first_folder_list("diffusion_models"), {"default": "controlnet-union-sdxl-1.0", "tooltip": "The controlnet model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
-            },
-            "optional": {
-                "enable_vae_slicing": ("BOOLEAN", {"default": True, "tooltip": "VAE will split the input tensor in slices to compute decoding in several steps. This is useful to save some memory and allow larger batch sizes."}),
-                "enable_vae_tiling": ("BOOLEAN", {"default": False, "tooltip": "Drastically reduces memory use but may introduce seams"}),
+                "device": (["auto", "cuda", "cpu", "mps", "xpu", "meta"],{"default": "auto", "tooltip": "Device for inference, default is auto checked by comfyui"}), 
+                "dtype": (["auto","fp16","bf16","fp32", "fp8_e4m3fn", "fp8_e4m3fnuz", "fp8_e5m2", "fp8_e5m2fnuz"],{"default":"auto", "tooltip": "Model precision for inference, default is auto checked by comfyui"}),
+                "sequential_cpu_offload": ("BOOLEAN", {"default": False, "tooltip": "Inference by default needs around 8gb vram, if this option is on it will move controlnet and unet back and forth between cpu and vram, to have only one model loaded at a time (around 6 gb vram used), useful for gpus under 8gb but will impact inference speed."}),
             },
         }
 
@@ -178,76 +158,27 @@ class LoadDiffusersOutpaintModels:
     FUNCTION = "load"
     CATEGORY = "DiffusersOutpaint"
    
-    def load(self, model, vae, controlnet_model, enable_vae_slicing, enable_vae_tiling):
+    def load(self, model, controlnet_model, device, dtype, sequential_cpu_offload):
         # Go 2 folders back
         comfy_dir = os.path.dirname(os.path.dirname(my_dir))
         
         model_path = f"{comfy_dir}/models/diffusion_models/{model}"
-        vae_path = f"{comfy_dir}/models/diffusion_models/{vae}"
         controlnet_path = f"{comfy_dir}/models/diffusion_models/{controlnet_model}"
-        #-----------------------------------------------------------------------
-
-        # Set up Controlnet-Union-Promax-SDXL model
-        config_file = f"{controlnet_path}/config_promax.json"
-        config = ControlNetModel_Union.load_config(config_file)
-        controlnet_model = ControlNetModel_Union.from_config(config)
-
-        model_file = f"{controlnet_path}/diffusion_pytorch_model_promax.safetensors"
-        state_dict = load_state_dict(model_file)
-
-        model, _, _, _, _ = ControlNetModel_Union._load_pretrained_model(
-            controlnet_model, state_dict, model_file, f"{controlnet_path}"
-        )
-        model.to(device="cuda", dtype=torch.float16)
-        #-----------------------------------------------------------------------
-
-        # Set up VAE
-        vae = AutoencoderKL.from_pretrained(f"{vae_path}", torch_dtype=torch.float16).to("cuda")
         
-        if enable_vae_slicing:
-            vae.enable_slicing()
-        else:
-            vae.disable_slicing()
+        device = get_device_by_name(device)
+        dtype = get_dtype_by_name(dtype)
         
-        if enable_vae_tiling:
-            vae.enable_tiling()
-        else:
-            vae.disable_tiling()
-        #-----------------------------------------------------------------------
-
-        # Load Controlnet + Vae into RealVisXL model
-        pipe = StableDiffusionXLFillPipeline.from_pretrained(
-            f"{model_path}",
-            torch_dtype=torch.float16,
-            vae=vae,
-            controlnet=controlnet_model,
-            variant="fp16"
-        )
-        
-        pipe.scheduler = TCDScheduler.from_config(pipe.scheduler.config)
-        pipe.enable_model_cpu_offload()
-
-        del model, state_dict, model_file
-        gc.collect()
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
-
         diffusers_outpaint_pipe = {
-            "pipe": pipe,
-            "vae": vae,
-            "controlnet_model": controlnet_model
+            "model_path": model_path,
+            "controlnet_model": controlnet_model,
+            "controlnet_path": controlnet_path,
+            "device": device,
+            "dtype": dtype,
+            "keep_model_device": sequential_cpu_offload,
         }
-
+        
         return (diffusers_outpaint_pipe,)
 
-
-# Tensor to PIL (grabbed from WAS Suite)
-def tensor2pil(image: torch.Tensor) -> Image.Image:
-    return Image.fromarray(np.clip(255. * image.cpu().numpy().squeeze(), 0, 255).astype(np.uint8))
-
-# Convert PIL to Tensor (grabbed from WAS Suite)
-def pil2tensor(image: Image.Image) -> torch.Tensor:
-    return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
 
 class EncodeDiffusersOutpaintPrompt:
     @classmethod
@@ -261,27 +192,25 @@ class EncodeDiffusersOutpaintPrompt:
 
     RETURN_TYPES = ("PIPE","CONDITIONING",)
     RETURN_NAMES = ("diffusers_outpaint_pipe","diffusers_outpaint_conditioning",)
-    FUNCTION = "sample"
+    FUNCTION = "encode"
     CATEGORY = "DiffusersOutpaint"
 
-    def sample(self, diffusers_outpaint_pipe, extra_prompt=None):
-        pipe = diffusers_outpaint_pipe["pipe"]
-        
+    def encode(self, diffusers_outpaint_pipe, extra_prompt=None):
+        model_path = diffusers_outpaint_pipe["model_path"]
+        dtype = diffusers_outpaint_pipe["dtype"]
+        device = diffusers_outpaint_pipe["device"]
+
         final_prompt = f"{extra_prompt}, high quality, 4k"
         
-        (prompt_embeds,
-         negative_prompt_embeds,
-         pooled_prompt_embeds,
-         negative_pooled_prompt_embeds,
-        ) = pipe.encode_prompt(final_prompt)
-        
+        prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds = encodeDiffOutpaintPrompt(model_path, dtype, final_prompt, device)
+
         diffusers_outpaint_conditioning = {
             "prompt_embeds": prompt_embeds,
             "negative_prompt_embeds": negative_prompt_embeds,
             "pooled_prompt_embeds": pooled_prompt_embeds,
             "negative_pooled_prompt_embeds": negative_pooled_prompt_embeds
         }
-
+        
         return (diffusers_outpaint_pipe,diffusers_outpaint_conditioning,)
 
 
@@ -293,45 +222,42 @@ class DiffusersImageOutpaint:
                 "diffusers_outpaint_pipe": ("PIPE", {"tooltip": "Load the diffusers outpaint models."}),
                 "diffusers_outpaint_conditioning": ("CONDITIONING", {"tooltip": "The prompt describing what you want."}),
                 "diffuser_outpaint_cnet_image": ("IMAGE", {"tooltip": "The image to outpaint."}),
+                "guidance_scale": ("FLOAT", {"default": 1.50, "min": 1.01, "max": 10, "step": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt, however too high values will negatively impact quality."}),
+                "controlnet_strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 10, "step": 0.01}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "Fake seed, workaround used to keep generating different outpaints. Set to -1 to generate different images, or a fixed number to stop that."}),
                 "steps": ("INT", {"default": 8, "min": 4, "max": 20, "tooltip": "The number of steps used in the denoising process."}),
             }
         }
 
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = ("LATENT",)
     FUNCTION = "sample"
     CATEGORY = "DiffusersOutpaint"
 
-    def sample(self, diffusers_outpaint_pipe, diffusers_outpaint_conditioning, diffuser_outpaint_cnet_image, seed, steps):
-        # I have to save them here to cache them. The node doesn't load them again
-        pipe = diffusers_outpaint_pipe["pipe"]
-        vae = diffusers_outpaint_pipe["vae"]
+    def sample(self, diffusers_outpaint_pipe, diffusers_outpaint_conditioning, diffuser_outpaint_cnet_image, guidance_scale, controlnet_strength, seed, steps):
+        
+        cnet_image = diffuser_outpaint_cnet_image
+        cnet_image=tensor2pil(cnet_image)
+        cnet_image=cnet_image.convert('RGB')
+        
+        model_path = diffusers_outpaint_pipe["model_path"]
         controlnet_model = diffusers_outpaint_pipe["controlnet_model"]
+        controlnet_path = diffusers_outpaint_pipe["controlnet_path"]
+        dtype = diffusers_outpaint_pipe["dtype"]
+        device = diffusers_outpaint_pipe["device"]
+        keep_model_device = diffusers_outpaint_pipe["keep_model_device"]
+
         prompt_embeds = diffusers_outpaint_conditioning["prompt_embeds"]
         negative_prompt_embeds = diffusers_outpaint_conditioning["negative_prompt_embeds"]
         pooled_prompt_embeds = diffusers_outpaint_conditioning["pooled_prompt_embeds"]
         negative_pooled_prompt_embeds = diffusers_outpaint_conditioning["negative_pooled_prompt_embeds"]
 
-        cnet_image = diffuser_outpaint_cnet_image
-        cnet_image=tensor2pil(cnet_image)
-        cnet_image=cnet_image.convert('RGB')
-        
-        generated_images = list(pipe(
-            prompt_embeds=prompt_embeds,
-            negative_prompt_embeds=negative_prompt_embeds,
-            pooled_prompt_embeds=pooled_prompt_embeds,
-            negative_pooled_prompt_embeds=negative_pooled_prompt_embeds,
-            image=cnet_image,
-            num_inference_steps=steps
-        ))
-        
-        del pipe, vae, controlnet_model, prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds
+        last_rgb_latent = diffuserOutpaintSamples(model_path, controlnet_model, diffuser_outpaint_cnet_image, dtype, controlnet_path, 
+                                                  prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds, 
+                                                  device, steps, controlnet_strength, guidance_scale, 
+                                                  keep_model_device)
+        del diffusers_outpaint_conditioning
         gc.collect()
         torch.cuda.empty_cache()
         torch.cuda.ipc_collect()
-
-        last_image = generated_images[-1] # Access the last image
-        image = last_image.convert("RGB")
-        output=pil2tensor(image)
         
-        return (output,)
+        return ({"samples":last_rgb_latent},)
