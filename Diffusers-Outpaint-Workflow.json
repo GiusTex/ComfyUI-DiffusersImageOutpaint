@@ -1,26 +1,91 @@
 {
-  "last_node_id": 648,
-  "last_link_id": 1190,
+  "last_node_id": 689,
+  "last_link_id": 1301,
   "nodes": [
     {
-      "id": 402,
-      "type": "GetImageSizeAndCount",
+      "id": 675,
+      "type": "LoadDiffusersOutpaintModels",
       "pos": {
-        "0": 960,
-        "1": 60
+        "0": -210,
+        "1": 160
       },
       "size": {
-        "0": 210,
-        "1": 90
+        "0": 320,
+        "1": 154
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [
+            1264
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadDiffusersOutpaintModels"
+      },
+      "widgets_values": [
+        "RealVisXL_V5.0_Lightning",
+        "controlnet-union-sdxl-1.0",
+        "auto",
+        "auto",
+        false
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 351,
+      "type": "PreviewImage",
+      "pos": {
+        "0": 970,
+        "1": 280
+      },
+      "size": {
+        "0": 510,
+        "1": 490
       },
       "flags": {},
       "order": 8,
       "mode": 0,
       "inputs": [
         {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 679
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 402,
+      "type": "GetImageSizeAndCount",
+      "pos": {
+        "0": 1200,
+        "1": 150
+      },
+      "size": {
+        "0": 210,
+        "1": 90
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
           "name": "image",
           "type": "IMAGE",
-          "link": 1168
+          "link": 1297
         }
       ],
       "outputs": [
@@ -40,7 +105,7 @@
           "shape": 3
         },
         {
-          "name": "480 height",
+          "name": "1280 height",
           "type": "INT",
           "links": null,
           "shape": 3
@@ -58,34 +123,29 @@
       "widgets_values": []
     },
     {
-      "id": 638,
-      "type": "DiffusersImageOutpaint",
+      "id": 688,
+      "type": "VAEDecode",
       "pos": {
-        "0": 620,
-        "1": 150
+        "0": 960,
+        "1": 160
       },
       "size": {
-        "0": 320.79998779296875,
-        "1": 166
+        "0": 210,
+        "1": 46
       },
       "flags": {},
       "order": 6,
       "mode": 0,
       "inputs": [
         {
-          "name": "diffusers_outpaint_pipe",
-          "type": "PIPE",
-          "link": 1170
+          "name": "samples",
+          "type": "LATENT",
+          "link": 1301
         },
         {
-          "name": "diffusers_outpaint_conditioning",
-          "type": "CONDITIONING",
-          "link": 1171
-        },
-        {
-          "name": "diffuser_outpaint_cnet_image",
-          "type": "IMAGE",
-          "link": 1173
+          "name": "vae",
+          "type": "VAE",
+          "link": 1296
         }
       ],
       "outputs": [
@@ -93,17 +153,66 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            1168
+            1297
           ],
           "slot_index": 0,
           "shape": 3
         }
       ],
       "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 689,
+      "type": "DiffusersImageOutpaint",
+      "pos": {
+        "0": 620,
+        "1": 150
+      },
+      "size": {
+        "0": 320,
+        "1": 190
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 1298
+        },
+        {
+          "name": "diffusers_outpaint_conditioning",
+          "type": "CONDITIONING",
+          "link": 1299
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "link": 1300
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            1301
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
         "Node name for S&R": "DiffusersImageOutpaint"
       },
       "widgets_values": [
-        602182908713799,
+        1.5,
+        1,
+        693728282818736,
         "randomize",
         8
       ],
@@ -111,204 +220,11 @@
       "bgcolor": "#353"
     },
     {
-      "id": 639,
-      "type": "EncodeDiffusersOutpaintPrompt",
-      "pos": {
-        "0": 130,
-        "1": 150
-      },
-      "size": {
-        "0": 463.6000061035156,
-        "1": 80
-      },
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "diffusers_outpaint_pipe",
-          "type": "PIPE",
-          "link": 1169
-        }
-      ],
-      "outputs": [
-        {
-          "name": "diffusers_outpaint_pipe",
-          "type": "PIPE",
-          "links": [
-            1170
-          ],
-          "shape": 3
-        },
-        {
-          "name": "diffusers_outpaint_conditioning",
-          "type": "CONDITIONING",
-          "links": [
-            1171
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "EncodeDiffusersOutpaintPrompt"
-      },
-      "widgets_values": [
-        ""
-      ]
-    },
-    {
-      "id": 637,
-      "type": "LoadDiffusersOutpaintModels",
-      "pos": {
-        "0": -270,
-        "1": 120
-      },
-      "size": {
-        "0": 370,
-        "1": 180
-      },
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "diffusers_outpaint_pipe",
-          "type": "PIPE",
-          "links": [
-            1169
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadDiffusersOutpaintModels"
-      },
-      "widgets_values": [
-        "RealVisXL_V5.0_Lightning",
-        "sdxl-vae-fp16-fix",
-        "controlnet-union-sdxl-1.0",
-        false,
-        false
-      ],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
-      "id": 579,
-      "type": "VAEEncodeForInpaint",
-      "pos": {
-        "0": 650,
-        "1": -110
-      },
-      "size": {
-        "0": 230,
-        "1": 100
-      },
-      "flags": {},
-      "order": 5,
-      "mode": 2,
-      "inputs": [
-        {
-          "name": "pixels",
-          "type": "IMAGE",
-          "link": 1187
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 1182
-        },
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": 1186
-        }
-      ],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "links": [
-            1081
-          ],
-          "slot_index": 0,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAEEncodeForInpaint"
-      },
-      "widgets_values": [
-        6
-      ]
-    },
-    {
-      "id": 582,
-      "type": "KSampler",
-      "pos": {
-        "0": 930,
-        "1": -310
-      },
-      "size": {
-        "0": 315,
-        "1": 262
-      },
-      "flags": {},
-      "order": 7,
-      "mode": 2,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": null
-        },
-        {
-          "name": "positive",
-          "type": "CONDITIONING",
-          "link": null
-        },
-        {
-          "name": "negative",
-          "type": "CONDITIONING",
-          "link": null
-        },
-        {
-          "name": "latent_image",
-          "type": "LATENT",
-          "link": 1081
-        }
-      ],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "links": [
-            1188
-          ],
-          "slot_index": 0,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "KSampler"
-      },
-      "widgets_values": [
-        869424055413749,
-        "randomize",
-        8,
-        2,
-        "euler",
-        "normal",
-        1
-      ]
-    },
-    {
-      "id": 646,
+      "id": 683,
       "type": "VAELoader",
       "pos": {
-        "0": 290,
-        "1": -130
+        "0": 630,
+        "1": 400
       },
       "size": {
         "0": 315,
@@ -316,18 +232,17 @@
       },
       "flags": {},
       "order": 1,
-      "mode": 2,
+      "mode": 0,
       "inputs": [],
       "outputs": [
         {
           "name": "VAE",
           "type": "VAE",
           "links": [
-            1182,
-            1189
+            1296
           ],
-          "shape": 3,
-          "slot_index": 0
+          "slot_index": 0,
+          "shape": 3
         }
       ],
       "properties": {
@@ -335,108 +250,16 @@
       },
       "widgets_values": [
         "sdxl_vae.safetensors"
-      ]
-    },
-    {
-      "id": 351,
-      "type": "PreviewImage",
-      "pos": {
-        "0": 1190,
-        "1": 50
-      },
-      "size": {
-        "0": 510,
-        "1": 490
-      },
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 679
-        }
       ],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": []
-    },
-    {
-      "id": 648,
-      "type": "PreviewImage",
-      "pos": {
-        "0": 1520,
-        "1": -490
-      },
-      "size": {
-        "0": 510,
-        "1": 490
-      },
-      "flags": {},
-      "order": 11,
-      "mode": 2,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 1190
-        }
-      ],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      }
-    },
-    {
-      "id": 647,
-      "type": "VAEDecode",
-      "pos": {
-        "0": 1280,
-        "1": -320
-      },
-      "size": {
-        "0": 210,
-        "1": 46
-      },
-      "flags": {},
-      "order": 9,
-      "mode": 2,
-      "inputs": [
-        {
-          "name": "samples",
-          "type": "LATENT",
-          "link": 1188
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 1189
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            1190
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAEDecode"
-      }
+      "color": "#223",
+      "bgcolor": "#335"
     },
     {
       "id": 1,
       "type": "LoadImage",
       "pos": {
-        "0": -220,
-        "1": 350
+        "0": -200,
+        "1": 360
       },
       "size": [
         320,
@@ -451,7 +274,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            1172
+            1194
           ],
           "slot_index": 0,
           "shape": 3
@@ -468,12 +291,12 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "illust_118654210_20240921_115326.jpg",
+        "20240930_201555.jpg",
         "image"
       ]
     },
     {
-      "id": 640,
+      "id": 653,
       "type": "PadImageForDiffusersOutpaint",
       "pos": {
         "0": 290,
@@ -490,33 +313,27 @@
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 1172
+          "link": 1194
         }
       ],
       "outputs": [
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": [
-            1187
-          ],
-          "shape": 3,
-          "slot_index": 0
+          "links": null,
+          "shape": 3
         },
         {
           "name": "MASK",
           "type": "MASK",
-          "links": [
-            1186
-          ],
-          "shape": 3,
-          "slot_index": 1
+          "links": null,
+          "shape": 3
         },
         {
           "name": "diffuser_outpaint_cnet_image",
           "type": "IMAGE",
           "links": [
-            1173
+            1300
           ],
           "shape": 3
         }
@@ -525,9 +342,57 @@
         "Node name for S&R": "PadImageForDiffusersOutpaint"
       },
       "widgets_values": [
-        1280,
         720,
-        "Middle"
+        1280,
+        "Top"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 655,
+      "type": "EncodeDiffusersOutpaintPrompt",
+      "pos": {
+        "0": 130,
+        "1": 150
+      },
+      "size": {
+        "0": 463.6000061035156,
+        "1": 80
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 1264
+        }
+      ],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [
+            1298
+          ],
+          "shape": 3
+        },
+        {
+          "name": "diffusers_outpaint_conditioning",
+          "type": "CONDITIONING",
+          "links": [
+            1299
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EncodeDiffusersOutpaintPrompt"
+      },
+      "widgets_values": [
+        "sitting"
       ],
       "color": "#232",
       "bgcolor": "#353"
@@ -543,118 +408,78 @@
       "IMAGE"
     ],
     [
-      1081,
-      579,
+      1194,
+      1,
       0,
-      582,
-      3,
-      "LATENT"
+      653,
+      0,
+      "IMAGE"
     ],
     [
-      1168,
-      638,
+      1264,
+      675,
+      0,
+      655,
+      0,
+      "PIPE"
+    ],
+    [
+      1296,
+      683,
+      0,
+      688,
+      1,
+      "VAE"
+    ],
+    [
+      1297,
+      688,
       0,
       402,
       0,
       "IMAGE"
     ],
     [
-      1169,
-      637,
+      1298,
+      655,
       0,
-      639,
-      0,
-      "PIPE"
-    ],
-    [
-      1170,
-      639,
-      0,
-      638,
+      689,
       0,
       "PIPE"
     ],
     [
-      1171,
-      639,
+      1299,
+      655,
       1,
-      638,
+      689,
       1,
       "CONDITIONING"
     ],
     [
-      1172,
-      1,
-      0,
-      640,
-      0,
-      "IMAGE"
-    ],
-    [
-      1173,
-      640,
+      1300,
+      653,
       2,
-      638,
+      689,
       2,
       "IMAGE"
     ],
     [
-      1182,
-      646,
+      1301,
+      689,
       0,
-      579,
-      1,
-      "VAE"
-    ],
-    [
-      1186,
-      640,
-      1,
-      579,
-      2,
-      "MASK"
-    ],
-    [
-      1187,
-      640,
-      0,
-      579,
-      0,
-      "IMAGE"
-    ],
-    [
-      1188,
-      582,
-      0,
-      647,
+      688,
       0,
       "LATENT"
-    ],
-    [
-      1189,
-      646,
-      0,
-      647,
-      1,
-      "VAE"
-    ],
-    [
-      1190,
-      647,
-      0,
-      648,
-      0,
-      "IMAGE"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.6588450000000002,
+      "scale": 0.8769226950000005,
       "offset": [
-        321.21742266599995,
-        354.6339459228647
+        254.45705206435736,
+        -58.04927351924108
       ]
     }
   },
