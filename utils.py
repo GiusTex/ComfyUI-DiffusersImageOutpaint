@@ -84,18 +84,14 @@ def clearVram(device):
         torch.cuda.ipc_collect()
     elif device.type == "mps":
         torch.mps.empty_cache()
-        torch.mps.ipc_collect()
     elif device.type == "xla":
         torch.xla.empty_cache()
-        torch.xla.ipc_collect()
     elif device.type == "xpu":
         torch.xpu.empty_cache()
-        torch.xpu.ipc_collect()
     elif device.type == "meta":
         torch.meta.empty_cache()
-        torch.meta.ipc_collect()
-    else: # for CPU
-        torch.ipc_collect()
+    
+    # torch.ipc_collect() not available, and ipc_collect seems available only for cuda
 
 
 def encodeDiffOutpaintPrompt(model_path, dtype, final_prompt, device):    
