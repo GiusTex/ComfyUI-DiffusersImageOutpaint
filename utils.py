@@ -76,6 +76,28 @@ def loadDiffModels1(model_path, dtype, device):
     return tokenizer, tokenizer_2, text_encoder, text_encoder_2
 
 
+def clearVram(device):
+    gc.collect()
+
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+    elif device.type == "mps":
+        torch.mps.empty_cache()
+        torch.mps.ipc_collect()
+    elif device.type == "xla":
+        torch.xla.empty_cache()
+        torch.xla.ipc_collect()
+    elif device.type == "xpu":
+        torch.xpu.empty_cache()
+        torch.xpu.ipc_collect()
+    elif device.type == "meta":
+        torch.meta.empty_cache()
+        torch.meta.ipc_collect()
+    else: # for CPU
+        torch.ipc_collect()
+
+
 def encodeDiffOutpaintPrompt(model_path, dtype, final_prompt, device):    
     tokenizer, tokenizer_2, text_encoder, text_encoder_2 = loadDiffModels1(model_path, dtype, device)
 
@@ -86,9 +108,8 @@ def encodeDiffOutpaintPrompt(model_path, dtype, final_prompt, device):
     ) = encode_prompt(final_prompt, tokenizer, tokenizer_2, text_encoder, text_encoder_2, device, True)
     
     del tokenizer, tokenizer_2, text_encoder, text_encoder_2
-    gc.collect()
-    torch.cuda.empty_cache()
-    torch.cuda.ipc_collect()
+    
+    clearVram(device)
 
     return prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds
 
@@ -107,9 +128,8 @@ def loadControlnetModel(device, dtype, controlnet_path):
     controlnet_model.to(device, dtype)
 
     del model, state_dict, model_file
-    gc.collect()
-    torch.cuda.empty_cache()
-    torch.cuda.ipc_collect()
+    
+    clearVram(device)
 
     return controlnet_model
 
@@ -169,8 +189,7 @@ def diffuserOutpaintSamples(model_path, controlnet_model, diffuser_outpaint_cnet
     last_rgb_latent = rgb_latents[-1] # Access the last image
     
     del pipe, controlnet_model, scheduler, prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds
-    gc.collect()
-    torch.cuda.empty_cache()
-    torch.cuda.ipc_collect()
     
+    clearVram(device)
+
     return last_rgb_latent
