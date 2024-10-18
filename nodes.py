@@ -2,7 +2,7 @@ import torch
 import gc
 import os
 from PIL import Image
-from .utils import get_first_folder_list, tensor2pil, pil2tensor, encodeDiffOutpaintPrompt, diffuserOutpaintSamples, get_device_by_name, get_dtype_by_name
+from .utils import get_first_folder_list, tensor2pil, pil2tensor, encodeDiffOutpaintPrompt, diffuserOutpaintSamples, get_device_by_name, get_dtype_by_name, clearVram
 
 
 # Get the absolute path of various directories
@@ -256,8 +256,6 @@ class DiffusersImageOutpaint:
                                                   device, steps, controlnet_strength, guidance_scale, 
                                                   keep_model_device)
         del diffusers_outpaint_conditioning
-        gc.collect()
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
+        clearVram(device)
         
         return ({"samples":last_rgb_latent},)
