@@ -7,6 +7,11 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 - 10/2024: You don't need any more the diffusers vae, and can use the extension in low vram mode using `sequential_cpu_offload` (also thanks to [zmwv823](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/pull/4)) that pushes the vram usage from *8,3 gb* down to **_6 gb_**.
 - 10/2024: If your `text_encoder` and `text_encoder_2` names contain `.fp16.` or other things before `safetensors`, you need to remove it (see the table below).
 
+#### To do list to [change model used](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/pull/14):
+- [x] ComfyUI Clip Loader Node
+- [ ] ComfyUI Load Diffusion Model Node
+- [ ] ComfyUI Load Conotrolnet Model Node
+
 ## Installation
 - Download this extension or `git clone` it in comfyui/custom_nodes, then (if comfyui-manager didn't already install the requirements or you have missing modules), from comfyui virtual env write `cd your/path/to/this/extension` and `pip install -r requirements.txt`.
 - Download models in the **`comfyui/models/diffusion_models`** folder, following the grid below (you can use the links to download the suggested models; you can also change the main model, but you need the specified controlnet since the extension is hardcoded to use it, for now):
