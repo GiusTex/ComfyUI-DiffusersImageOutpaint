@@ -1,17 +1,129 @@
 {
-  "last_node_id": 689,
-  "last_link_id": 1301,
+  "last_node_id": 591,
+  "last_link_id": 1259,
   "nodes": [
     {
-      "id": 675,
-      "type": "LoadDiffusersOutpaintModels",
+      "id": 584,
+      "type": "DiffusersImageOutpaint",
       "pos": {
-        "0": -210,
-        "1": 160
+        "0": 320,
+        "1": 90
       },
       "size": {
-        "0": 320,
-        "1": 154
+        "0": 300,
+        "1": 214
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 1255
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 1254
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 1258
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "link": 1251
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            1241
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "DiffusersImageOutpaint",
+      "properties": {
+        "Node name for S&R": "DiffusersImageOutpaint"
+      },
+      "widgets_values": [
+        1.5,
+        1,
+        1009037337630565,
+        "randomize",
+        8
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 529,
+      "type": "PadImageForDiffusersOutpaint",
+      "pos": {
+        "0": 0,
+        "1": 390
+      },
+      "size": {
+        "0": 290,
+        "1": 150
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1005
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "links": [
+            1251
+          ],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PadImageForDiffusersOutpaint"
+      },
+      "widgets_values": [
+        720,
+        1280,
+        "Top"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 531,
+      "type": "VAELoader",
+      "pos": {
+        "0": 370,
+        "1": 350
+      },
+      "size": {
+        "0": 260,
+        "1": 60
       },
       "flags": {},
       "order": 0,
@@ -19,12 +131,46 @@
       "inputs": [],
       "outputs": [
         {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            1007
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "sdxl_vae.safetensors"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 534,
+      "type": "LoadDiffusersOutpaintModels",
+      "pos": {
+        "0": -480,
+        "1": 60
+      },
+      "size": {
+        "0": 320,
+        "1": 154
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
           "name": "diffusers_outpaint_pipe",
           "type": "PIPE",
           "links": [
-            1264
+            1253,
+            1257
           ],
-          "shape": 3
+          "slot_index": 0
         }
       ],
       "properties": {
@@ -41,24 +187,190 @@
       "bgcolor": "#335"
     },
     {
-      "id": 351,
-      "type": "PreviewImage",
+      "id": 588,
+      "type": "EncodeDiffusersOutpaintPrompt",
       "pos": {
-        "0": 970,
-        "1": 280
+        "0": -110,
+        "1": 220
       },
       "size": {
-        "0": 510,
-        "1": 490
+        "0": 400,
+        "1": 96
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 1257
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1256
+        }
+      ],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [],
+          "slot_index": 0
+        },
+        {
+          "name": "diffusers_conditioning",
+          "type": "CONDITIONING",
+          "links": [
+            1258
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EncodeDiffusersOutpaintPrompt"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 580,
+      "type": "DualCLIPLoader",
+      "pos": {
+        "0": -420,
+        "1": 260
+      },
+      "size": {
+        "0": 260,
+        "1": 110
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1252,
+            1256
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DualCLIPLoader"
+      },
+      "widgets_values": [
+        "clip_l.safetensors",
+        "model.fp16.safetensors",
+        "sdxl"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 530,
+      "type": "VAEDecode",
+      "pos": {
+        "0": 660,
+        "1": 90
+      },
+      "size": {
+        "0": 210,
+        "1": 46
       },
       "flags": {},
       "order": 8,
       "mode": 0,
       "inputs": [
         {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 1241
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 1007
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1259
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 528,
+      "type": "LoadImage",
+      "pos": {
+        "0": -360,
+        "1": 430
+      },
+      "size": [
+        320,
+        310
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1005
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "Emilia3.png",
+        "image"
+      ]
+    },
+    {
+      "id": 351,
+      "type": "PreviewImage",
+      "pos": {
+        "0": 670,
+        "1": 190
+      },
+      "size": {
+        "0": 510,
+        "1": 490
+      },
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
           "name": "images",
           "type": "IMAGE",
-          "link": 679
+          "link": 1259
         }
       ],
       "outputs": [],
@@ -68,306 +380,29 @@
       "widgets_values": []
     },
     {
-      "id": 402,
-      "type": "GetImageSizeAndCount",
+      "id": 587,
+      "type": "EncodeDiffusersOutpaintPrompt",
       "pos": {
-        "0": 1200,
-        "1": 150
+        "0": -120,
+        "1": 70
       },
       "size": {
-        "0": 210,
-        "1": 90
-      },
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 1297
-        }
-      ],
-      "outputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "links": [
-            679
-          ],
-          "slot_index": 0,
-          "shape": 3
-        },
-        {
-          "name": "720 width",
-          "type": "INT",
-          "links": null,
-          "shape": 3
-        },
-        {
-          "name": "1280 height",
-          "type": "INT",
-          "links": null,
-          "shape": 3
-        },
-        {
-          "name": "1 count",
-          "type": "INT",
-          "links": null,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "GetImageSizeAndCount"
-      },
-      "widgets_values": []
-    },
-    {
-      "id": 688,
-      "type": "VAEDecode",
-      "pos": {
-        "0": 960,
-        "1": 160
-      },
-      "size": {
-        "0": 210,
-        "1": 46
-      },
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "samples",
-          "type": "LATENT",
-          "link": 1301
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 1296
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            1297
-          ],
-          "slot_index": 0,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAEDecode"
-      },
-      "widgets_values": []
-    },
-    {
-      "id": 689,
-      "type": "DiffusersImageOutpaint",
-      "pos": {
-        "0": 620,
-        "1": 150
-      },
-      "size": {
-        "0": 320,
-        "1": 190
-      },
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "diffusers_outpaint_pipe",
-          "type": "PIPE",
-          "link": 1298
-        },
-        {
-          "name": "diffusers_outpaint_conditioning",
-          "type": "CONDITIONING",
-          "link": 1299
-        },
-        {
-          "name": "diffuser_outpaint_cnet_image",
-          "type": "IMAGE",
-          "link": 1300
-        }
-      ],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "links": [
-            1301
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "DiffusersImageOutpaint"
-      },
-      "widgets_values": [
-        1.5,
-        1,
-        693728282818736,
-        "randomize",
-        8
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 683,
-      "type": "VAELoader",
-      "pos": {
-        "0": 630,
-        "1": 400
-      },
-      "size": {
-        "0": 315,
-        "1": 58
-      },
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            1296
-          ],
-          "slot_index": 0,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAELoader"
-      },
-      "widgets_values": [
-        "sdxl_vae.safetensors"
-      ],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
-      "id": 1,
-      "type": "LoadImage",
-      "pos": {
-        "0": -200,
-        "1": 360
-      },
-      "size": [
-        320,
-        310
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            1194
-          ],
-          "slot_index": 0,
-          "shape": 3
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": [],
-          "slot_index": 1,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "20240930_201555.jpg",
-        "image"
-      ]
-    },
-    {
-      "id": 653,
-      "type": "PadImageForDiffusersOutpaint",
-      "pos": {
-        "0": 290,
-        "1": 300
-      },
-      "size": {
-        "0": 290,
-        "1": 150
+        "0": 400,
+        "1": 96
       },
       "flags": {},
       "order": 4,
       "mode": 0,
       "inputs": [
         {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 1194
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": null,
-          "shape": 3
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null,
-          "shape": 3
-        },
-        {
-          "name": "diffuser_outpaint_cnet_image",
-          "type": "IMAGE",
-          "links": [
-            1300
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PadImageForDiffusersOutpaint"
-      },
-      "widgets_values": [
-        720,
-        1280,
-        "Top"
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 655,
-      "type": "EncodeDiffusersOutpaintPrompt",
-      "pos": {
-        "0": 130,
-        "1": 150
-      },
-      "size": {
-        "0": 463.6000061035156,
-        "1": 80
-      },
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [
-        {
           "name": "diffusers_outpaint_pipe",
           "type": "PIPE",
-          "link": 1264
+          "link": 1253
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1252
         }
       ],
       "outputs": [
@@ -375,24 +410,24 @@
           "name": "diffusers_outpaint_pipe",
           "type": "PIPE",
           "links": [
-            1298
+            1255
           ],
-          "shape": 3
+          "slot_index": 0
         },
         {
-          "name": "diffusers_outpaint_conditioning",
+          "name": "diffusers_conditioning",
           "type": "CONDITIONING",
           "links": [
-            1299
+            1254
           ],
-          "shape": 3
+          "slot_index": 1
         }
       ],
       "properties": {
         "Node name for S&R": "EncodeDiffusersOutpaintPrompt"
       },
       "widgets_values": [
-        "sitting"
+        ""
       ],
       "color": "#232",
       "bgcolor": "#353"
@@ -400,86 +435,110 @@
   ],
   "links": [
     [
-      679,
-      402,
+      1005,
+      528,
       0,
-      351,
-      0,
-      "IMAGE"
-    ],
-    [
-      1194,
-      1,
-      0,
-      653,
+      529,
       0,
       "IMAGE"
     ],
     [
-      1264,
-      675,
+      1007,
+      531,
       0,
-      655,
-      0,
-      "PIPE"
-    ],
-    [
-      1296,
-      683,
-      0,
-      688,
+      530,
       1,
       "VAE"
     ],
     [
-      1297,
-      688,
+      1241,
+      584,
       0,
-      402,
+      530,
       0,
+      "LATENT"
+    ],
+    [
+      1251,
+      529,
+      2,
+      584,
+      3,
       "IMAGE"
     ],
     [
-      1298,
-      655,
+      1252,
+      580,
       0,
-      689,
+      587,
+      1,
+      "CLIP"
+    ],
+    [
+      1253,
+      534,
+      0,
+      587,
       0,
       "PIPE"
     ],
     [
-      1299,
-      655,
+      1254,
+      587,
       1,
-      689,
+      584,
       1,
       "CONDITIONING"
     ],
     [
-      1300,
-      653,
-      2,
-      689,
-      2,
-      "IMAGE"
+      1255,
+      587,
+      0,
+      584,
+      0,
+      "PIPE"
     ],
     [
-      1301,
-      689,
+      1256,
+      580,
       0,
-      688,
+      588,
+      1,
+      "CLIP"
+    ],
+    [
+      1257,
+      534,
       0,
-      "LATENT"
+      588,
+      0,
+      "PIPE"
+    ],
+    [
+      1258,
+      588,
+      1,
+      584,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      1259,
+      530,
+      0,
+      351,
+      0,
+      "IMAGE"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.8769226950000005,
+      "scale": 0.7247295000000004,
       "offset": [
-        254.45705206435736,
-        -58.04927351924108
+        679.3196754354946,
+        80.60613789648367
       ]
     }
   },
