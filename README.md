@@ -1,9 +1,10 @@
 ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-outpaint](https://huggingface.co/spaces/fffiloni/diffusers-image-outpaint/tree/main) by fffiloni.
 
-![DiffusersImageOutpaint-Nodes-Screen](https://github.com/user-attachments/assets/2722e07c-1d6a-416e-a9d8-f26aaa9a45a7)
+![image](https://github.com/user-attachments/assets/8f7665a1-dd8c-44d6-a067-fcc3f48b1865)
+
 
 #### Updates:
-- 20/10/2024: No more need to download tokenizers nor text encoders! Now comfyui clip loader works, and you can use your clip models.
+- 20/10/2024: No more need to download tokenizers nor text encoders! Now comfyui clip loader works, and you can use your clip models. You can also use the Checkpoint Loader Simple node, to skip the clip selection part.
 - 10/2024: You don't need any more the diffusers vae, and can use the extension in low vram mode using `sequential_cpu_offload` (also thanks to [zmwv823](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/pull/4)) that pushes the vram usage from *8,3 gb* down to **_6 gb_**.
 - 10/2024: If your `text_encoder` and `text_encoder_2` names contain `.fp16.` or other things before `safetensors`, you need to remove it (see the table below).
 
