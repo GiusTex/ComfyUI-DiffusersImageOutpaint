@@ -67,163 +67,6 @@ def retrieve_timesteps(
     return timesteps, num_inference_steps
 
 
-def encode_prompt(
-        prompt: str,
-        tokenizer: None,
-        tokenizer_2: None,
-        text_encoder: None,
-        text_encoder_2: None,
-        device: Optional[torch.device] = None,
-        do_classifier_free_guidance: bool = True,
-    ):
-        prompt = [prompt] if isinstance(prompt, str) else prompt
-
-        if prompt is not None:
-            batch_size = len(prompt)
-
-        # Define tokenizers and text encoders
-        tokenizers = (
-            [tokenizer, tokenizer_2]
-            if tokenizer is not None
-            else [tokenizer_2]
-        )
-        text_encoders = (
-            [text_encoder, text_encoder_2]
-            if text_encoder is not None
-            else [text_encoder_2]
-        )
-
-        prompt_2 = prompt
-        prompt_2 = [prompt_2] if isinstance(prompt_2, str) else prompt_2
-
-        # textual inversion: process multi-vector tokens if necessary
-        prompt_embeds_list = []
-        prompts = [prompt, prompt_2]
-        for prompt, tokenizer, text_encoder in zip(prompts, tokenizers, text_encoders):
-            text_inputs = tokenizer(
-                prompt,
-                padding="max_length",
-                max_length=tokenizer.model_max_length,
-                truncation=True,
-                return_tensors="pt",
-            )
-
-            text_input_ids = text_inputs.input_ids
-
-            prompt_embeds = text_encoder(
-                text_input_ids.to(device), output_hidden_states=True
-            )
-
-            # We are only ALWAYS interested in the pooled output of the final text encoder
-            pooled_prompt_embeds = prompt_embeds[0]
-            prompt_embeds = prompt_embeds.hidden_states[-2]
-            prompt_embeds_list.append(prompt_embeds)
-
-        prompt_embeds = torch.concat(prompt_embeds_list, dim=-1)
-
-        # get unconditional embeddings for classifier free guidance
-        zero_out_negative_prompt = True
-        negative_prompt_embeds = None
-        negative_pooled_prompt_embeds = None
-
-        if do_classifier_free_guidance and zero_out_negative_prompt:
-            negative_prompt_embeds = torch.zeros_like(prompt_embeds)
-            negative_pooled_prompt_embeds = torch.zeros_like(pooled_prompt_embeds)
-        elif do_classifier_free_guidance and negative_prompt_embeds is None:
-            negative_prompt = ""
-            negative_prompt_2 = negative_prompt
-
-            # normalize str to list
-            negative_prompt = (
-                batch_size * [negative_prompt]
-                if isinstance(negative_prompt, str)
-                else negative_prompt
-            )
-            negative_prompt_2 = (
-                batch_size * [negative_prompt_2]
-                if isinstance(negative_prompt_2, str)
-                else negative_prompt_2
-            )
-
-            uncond_tokens: List[str]
-            if prompt is not None and type(prompt) is not type(negative_prompt):
-                raise TypeError(
-                    f"`negative_prompt` should be the same type to `prompt`, but got {type(negative_prompt)} !="
-                    f" {type(prompt)}."
-                )
-            elif batch_size != len(negative_prompt):
-                raise ValueError(
-                    f"`negative_prompt`: {negative_prompt} has batch size {len(negative_prompt)}, but `prompt`:"
-                    f" {prompt} has batch size {batch_size}. Please make sure that passed `negative_prompt` matches"
-                    " the batch size of `prompt`."
-                )
-            else:
-                uncond_tokens = [negative_prompt, negative_prompt_2]
-
-            negative_prompt_embeds_list = []
-            for negative_prompt, tokenizer, text_encoder in zip(
-                uncond_tokens, tokenizers, text_encoders
-            ):
-                max_length = prompt_embeds.shape[1]
-                uncond_input = tokenizer(
-                    negative_prompt,
-                    padding="max_length",
-                    max_length=max_length,
-                    truncation=True,
-                    return_tensors="pt",
-                )
-                
-                negative_prompt_embeds = text_encoder(
-                    uncond_input.input_ids.to(device),
-                    output_hidden_states=True,
-                )
-                # We are only ALWAYS interested in the pooled output of the final text encoder
-                negative_pooled_prompt_embeds = negative_prompt_embeds[0]
-                negative_prompt_embeds = negative_prompt_embeds.hidden_states[-2]
-
-                negative_prompt_embeds_list.append(negative_prompt_embeds)
-
-            negative_prompt_embeds = torch.concat(negative_prompt_embeds_list, dim=-1)
-
-        prompt_embeds = prompt_embeds.to(dtype=text_encoder_2.dtype, device=device)
-
-        bs_embed, seq_len, _ = prompt_embeds.shape
-        # duplicate text embeddings for each generation per prompt, using mps friendly method
-        prompt_embeds = prompt_embeds.repeat(1, 1, 1)
-        prompt_embeds = prompt_embeds.view(bs_embed * 1, seq_len, -1)
-
-        if do_classifier_free_guidance:
-            # duplicate unconditional embeddings for each generation per prompt, using mps friendly method
-            seq_len = negative_prompt_embeds.shape[1]
-
-            if text_encoder_2 is not None:
-                negative_prompt_embeds = negative_prompt_embeds.to(
-                    dtype=text_encoder_2.dtype, device=device
-                )
-            else:
-                negative_prompt_embeds = negative_prompt_embeds.to(
-                    dtype=torch.float16, device=device
-                )
-
-            negative_prompt_embeds = negative_prompt_embeds.repeat(1, 1, 1)
-            negative_prompt_embeds = negative_prompt_embeds.view(
-                batch_size * 1, seq_len, -1
-            )
-
-        pooled_prompt_embeds = pooled_prompt_embeds.repeat(1, 1).view(bs_embed * 1, -1)
-        if do_classifier_free_guidance:
-            negative_pooled_prompt_embeds = negative_pooled_prompt_embeds.repeat(
-                1, 1
-            ).view(bs_embed * 1, -1)
-
-        return (
-            prompt_embeds,
-            negative_prompt_embeds,
-            pooled_prompt_embeds,
-            negative_pooled_prompt_embeds,
-        )
-
-
 class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
     
     def __init__(
@@ -291,7 +134,7 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
     # corresponds to doing no classifier free guidance.
     @property
     def do_classifier_free_guidance(self):
-        return self._guidance_scale > 1 and self.unet.config.time_cond_proj_dim is None # UNET <----
+        return self._guidance_scale > 1 and self.unet.config.time_cond_proj_dim is None
 
     @property
     def num_timesteps(self):
@@ -302,10 +145,11 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
         self,
         controlnet_model,
         device,
+        dtype,
         keep_model_device,
         prompt_embeds: torch.Tensor,
-        negative_prompt_embeds: torch.Tensor,
         pooled_prompt_embeds: torch.Tensor,
+        negative_prompt_embeds: torch.Tensor,
         negative_pooled_prompt_embeds: torch.Tensor,
         image: PipelineImageInput = None,
         num_inference_steps: int = 8,
@@ -343,10 +187,10 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
             num_channels_latents,
             height,
             width,
-            prompt_embeds.dtype,
+            dtype,
             device,
         )
-
+        
         # 7 Prepare added time ids & embeddings
         add_text_embeds = pooled_prompt_embeds
 
@@ -376,7 +220,7 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
             "time_ids": add_time_ids,
             "control_type": union_control_type,
         }
-
+        
         controlnet_prompt_embeds = prompt_embeds.to(device)
         controlnet_added_cond_kwargs = added_cond_kwargs
 
@@ -430,9 +274,9 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
                     )[0]
                     if keep_model_device:
                         self.unet.to('cpu')
-                except torch.cuda.OutOfMemoryError as e: # free vram when OOM
+                except torch.cuda.OutOfMemoryError as e: # Free vram when OOM
                     self.unet.to('cpu')
-                    print('\033[93m', 'Gpu is out of memory(爆显存了)!', '\033[0m')
+                    print('\033[93m', 'Gpu is out of memory!', '\033[0m')
                     raise e
                 
                 # perform guidance

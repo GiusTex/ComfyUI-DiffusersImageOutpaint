@@ -1,8 +1,7 @@
 import torch
-import gc
 import os
 from PIL import Image
-from .utils import get_first_folder_list, tensor2pil, pil2tensor, encodeDiffOutpaintPrompt, diffuserOutpaintSamples, get_device_by_name, get_dtype_by_name, clearVram
+from .utils import get_first_folder_list, tensor2pil, pil2tensor, diffuserOutpaintSamples, get_device_by_name, get_dtype_by_name, clearVram
 
 
 # Get the absolute path of various directories
@@ -186,33 +185,44 @@ class EncodeDiffusersOutpaintPrompt:
         return {
             "required": {
                 "diffusers_outpaint_pipe": ("PIPE", {"tooltip": "Load the diffusers outpaint models."}),
-                "extra_prompt": ("STRING", {"default": "", "tooltip": "The extra prompt to append, describing attributes etc. you want to include in the image. Default: \"(extra_prompt), high quality, 4k\""}),
+                "text": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}), 
+                "clip": ("CLIP", {"tooltip": "The CLIP model used for encoding the text."})
             }
         }
-
     RETURN_TYPES = ("PIPE","CONDITIONING",)
-    RETURN_NAMES = ("diffusers_outpaint_pipe","diffusers_outpaint_conditioning",)
+    RETURN_NAMES = ("diffusers_outpaint_pipe","diffusers_conditioning",)
+    OUTPUT_TOOLTIPS = ("A conditioning containing the embedded text used to guide the diffusion model.",)
     FUNCTION = "encode"
     CATEGORY = "DiffusersOutpaint"
+    DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
 
-    def encode(self, diffusers_outpaint_pipe, extra_prompt=None):
-        model_path = diffusers_outpaint_pipe["model_path"]
+    def encode(self, diffusers_outpaint_pipe, text, clip):
         dtype = diffusers_outpaint_pipe["dtype"]
         device = diffusers_outpaint_pipe["device"]
-
-        final_prompt = f"{extra_prompt}, high quality, 4k"
         
-        prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds = encodeDiffOutpaintPrompt(model_path, dtype, final_prompt, device)
+        text = f"{text}, high quality, 4k"
+        tokens = clip.tokenize(text)
+        output = clip.encode_from_tokens(tokens, return_pooled=True, return_dict=True)
+        prompt_embeds = output.pop("cond")
 
-        diffusers_outpaint_conditioning = {
+        prompt_embeds = prompt_embeds.to(device, dtype=dtype)
+        pooled_prompt_embeds = output["pooled_output"].to(device, dtype=dtype)
+    
+        bs_embed, seq_len, _ = prompt_embeds.shape
+
+        # duplicate text embeddings for each generation per prompt, using mps friendly method
+        prompt_embeds = prompt_embeds.repeat(1, 1, 1)
+        prompt_embeds = prompt_embeds.view(bs_embed * 1, seq_len, -1)
+
+        pooled_prompt_embeds = pooled_prompt_embeds.repeat(1, 1).view(bs_embed * 1, -1)
+        
+        diffusers_conditioning = {
             "prompt_embeds": prompt_embeds,
-            "negative_prompt_embeds": negative_prompt_embeds,
             "pooled_prompt_embeds": pooled_prompt_embeds,
-            "negative_pooled_prompt_embeds": negative_pooled_prompt_embeds
         }
-        
-        return (diffusers_outpaint_pipe,diffusers_outpaint_conditioning,)
 
+        return (diffusers_outpaint_pipe,diffusers_conditioning,)
+    
 
 class DiffusersImageOutpaint:
     @classmethod
@@ -220,7 +230,8 @@ class DiffusersImageOutpaint:
         return {
             "required": {
                 "diffusers_outpaint_pipe": ("PIPE", {"tooltip": "Load the diffusers outpaint models."}),
-                "diffusers_outpaint_conditioning": ("CONDITIONING", {"tooltip": "The prompt describing what you want."}),
+                "positive": ("CONDITIONING", {"tooltip": "The prompt describing what you want."}),
+                "negative": ("CONDITIONING", {"tooltip": "The prompt describing what you don't want."}),
                 "diffuser_outpaint_cnet_image": ("IMAGE", {"tooltip": "The image to outpaint."}),
                 "guidance_scale": ("FLOAT", {"default": 1.50, "min": 1.01, "max": 10, "step": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt, however too high values will negatively impact quality."}),
                 "controlnet_strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 10, "step": 0.01}),
@@ -233,7 +244,7 @@ class DiffusersImageOutpaint:
     FUNCTION = "sample"
     CATEGORY = "DiffusersOutpaint"
 
-    def sample(self, diffusers_outpaint_pipe, diffusers_outpaint_conditioning, diffuser_outpaint_cnet_image, guidance_scale, controlnet_strength, seed, steps):
+    def sample(self, diffusers_outpaint_pipe, positive, negative, diffuser_outpaint_cnet_image, guidance_scale, controlnet_strength, seed, steps):
         
         cnet_image = diffuser_outpaint_cnet_image
         cnet_image=tensor2pil(cnet_image)
@@ -245,17 +256,18 @@ class DiffusersImageOutpaint:
         dtype = diffusers_outpaint_pipe["dtype"]
         device = diffusers_outpaint_pipe["device"]
         keep_model_device = diffusers_outpaint_pipe["keep_model_device"]
-
-        prompt_embeds = diffusers_outpaint_conditioning["prompt_embeds"]
-        negative_prompt_embeds = diffusers_outpaint_conditioning["negative_prompt_embeds"]
-        pooled_prompt_embeds = diffusers_outpaint_conditioning["pooled_prompt_embeds"]
-        negative_pooled_prompt_embeds = diffusers_outpaint_conditioning["negative_pooled_prompt_embeds"]
+                
+        prompt_embeds = positive["prompt_embeds"]
+        pooled_prompt_embeds = positive["pooled_prompt_embeds"]
+        negative_prompt_embeds = negative["prompt_embeds"]
+        negative_pooled_prompt_embeds = negative["pooled_prompt_embeds"]
 
         last_rgb_latent = diffuserOutpaintSamples(model_path, controlnet_model, diffuser_outpaint_cnet_image, dtype, controlnet_path, 
                                                   prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds, 
                                                   device, steps, controlnet_strength, guidance_scale, 
                                                   keep_model_device)
-        del diffusers_outpaint_conditioning
-        clearVram(device)
         
+        del prompt_embeds, pooled_prompt_embeds, negative_prompt_embeds, negative_pooled_prompt_embeds
+        clearVram(device)
+
         return ({"samples":last_rgb_latent},)
