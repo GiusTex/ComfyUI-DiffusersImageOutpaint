@@ -4,13 +4,16 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 
 
 #### Updates:
+- 22/10/2024:
+  - Unet and Controlnet Models Loader using ComfYUI nodes canceled, since I can't find a way to load them properly; more info at the end.
+  - Guide to change model used.
 - 20/10/2024: No more need to download tokenizers nor text encoders! Now comfyui clip loader works, and you can use your clip models. You can also use the Checkpoint Loader Simple node, to skip the clip selection part.
 - 10/2024: You don't need any more the diffusers vae, and can use the extension in low vram mode using `sequential_cpu_offload` (also thanks to [zmwv823](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/pull/4)) that pushes the vram usage from *8,3 gb* down to **_6 gb_**.
 
 #### To do list to [change model used](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/pull/14):
-- [x] ComfyUI Clip Loader Node
-- [ ] ComfyUI Load Diffusion Model Node
-- [ ] ComfyUI Load Conotrolnet Model Node
+- - [x] ComfyUI Clip Loader Node
+- ~[ ] ComfyUI Load Diffusion Model Node~
+- ~[ ] ComfyUI Load Conotrolnet Model Node~
 
 ## Installation
 - Download this extension or `git clone` it in comfyui/custom_nodes, then (if comfyui-manager didn't already install the requirements or you have missing modules), from comfyui virtual env write `cd your/path/to/this/extension` and `pip install -r requirements.txt`.
@@ -35,6 +38,13 @@ The extension gives 4 nodes:
 - **Diffusers Image Outpaint**: This is the main node, that outpaints the image. Currently the generation process is based on fffiloni's one, so you can't reproduce a specific a specific outpaint, and the `seed` option you see is only used to change the UI and generate a new image. You can specify the amount of `steps` to generate the image.
 
 - You can also pass image and mask to `vae encode (for inpainting)` node, then pass the latent to a `sampler`, but controlnets and ip-adapters are harder to use compared to diffusers outpaint.
+
+### Change model used
+- **Main model**: On huggingface, choose a model from [text2image models](https://huggingface.co/models?pipeline_tag=text-to-image&sort=trending), then create a new folder named after it in `comfyui/models/diffusion_models`, then download in it the subfolders `unet` and `scheduler`.
+- **Controlnet model**: same as above, except you don't need the `scheduler`.
+
+#### Unet and Controlnet Models Loader using ComfYUI nodes canceled
+Let me clarify: I _can_ load them, it's just that they don't work in the code, I don't understand how they are loaded differently, maybe this has something to do with the auto config (comfyui loaders don't ask you config files), or maybe it uses different classes, anyway whenever I pass the models loaded via comfyui, they give errors, so I can't use them.
 
 ## Credits
 diffusers-image-outpaint by [fffiloni](https://huggingface.co/spaces/fffiloni/diffusers-image-outpaint/tree/main)
