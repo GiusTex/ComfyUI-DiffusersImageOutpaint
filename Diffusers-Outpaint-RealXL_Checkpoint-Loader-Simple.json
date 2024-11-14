@@ -1,7 +1,48 @@
 {
   "last_node_id": 591,
-  "last_link_id": 1259,
+  "last_link_id": 1263,
   "nodes": [
+    {
+      "id": 530,
+      "type": "VAEDecode",
+      "pos": {
+        "0": 660,
+        "1": 90
+      },
+      "size": {
+        "0": 210,
+        "1": 46
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 1241
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 1261
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1262
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
     {
       "id": 584,
       "type": "DiffusersImageOutpaint",
@@ -14,7 +55,7 @@
         "1": 214
       },
       "flags": {},
-      "order": 7,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -55,7 +96,7 @@
       "widgets_values": [
         1.5,
         1,
-        1009037337630565,
+        43078817542338,
         "randomize",
         8
       ],
@@ -74,13 +115,13 @@
         "1": 150
       },
       "flags": {},
-      "order": 6,
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 1005
+          "link": 1263
         }
       ],
       "outputs": [
@@ -115,39 +156,6 @@
       "bgcolor": "#353"
     },
     {
-      "id": 531,
-      "type": "VAELoader",
-      "pos": {
-        "0": 370,
-        "1": 350
-      },
-      "size": {
-        "0": 260,
-        "1": 60
-      },
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            1007
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAELoader"
-      },
-      "widgets_values": [
-        "sdxl_vae.safetensors"
-      ],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
       "id": 534,
       "type": "LoadDiffusersOutpaintModels",
       "pos": {
@@ -159,7 +167,7 @@
         "1": 154
       },
       "flags": {},
-      "order": 1,
+      "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -198,7 +206,7 @@
         "1": 96
       },
       "flags": {},
-      "order": 5,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -209,7 +217,7 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 1256
+          "link": 1259
         }
       ],
       "outputs": [
@@ -238,96 +246,45 @@
       "bgcolor": "#533"
     },
     {
-      "id": 580,
-      "type": "DualCLIPLoader",
+      "id": 351,
+      "type": "PreviewImage",
       "pos": {
-        "0": -420,
-        "1": 260
+        "0": 650,
+        "1": 180
       },
       "size": {
-        "0": 260,
-        "1": 110
-      },
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            1252,
-            1256
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "DualCLIPLoader"
-      },
-      "widgets_values": [
-        "clip_l.safetensors",
-        "model.fp16.safetensors",
-        "sdxl"
-      ],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
-      "id": 530,
-      "type": "VAEDecode",
-      "pos": {
-        "0": 660,
-        "1": 90
-      },
-      "size": {
-        "0": 210,
-        "1": 46
+        "0": 510,
+        "1": 490
       },
       "flags": {},
       "order": 8,
       "mode": 0,
       "inputs": [
         {
-          "name": "samples",
-          "type": "LATENT",
-          "link": 1241
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": 1007
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
+          "name": "images",
           "type": "IMAGE",
-          "links": [
-            1259
-          ],
-          "slot_index": 0
+          "link": 1262
         }
       ],
+      "outputs": [],
       "properties": {
-        "Node name for S&R": "VAEDecode"
+        "Node name for S&R": "PreviewImage"
       },
       "widgets_values": []
     },
     {
-      "id": 528,
+      "id": 591,
       "type": "LoadImage",
       "pos": {
-        "0": -360,
-        "1": 430
+        "0": -350,
+        "1": 400
       },
       "size": [
         320,
         310
       ],
       "flags": {},
-      "order": 3,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -335,8 +292,9 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            1005
-          ]
+            1263
+          ],
+          "slot_index": 0
         },
         {
           "name": "MASK",
@@ -348,36 +306,9 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "Emilia3.png",
+        "20230403_183417.jpg",
         "image"
       ]
-    },
-    {
-      "id": 351,
-      "type": "PreviewImage",
-      "pos": {
-        "0": 670,
-        "1": 190
-      },
-      "size": {
-        "0": 510,
-        "1": 490
-      },
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 1259
-        }
-      ],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      },
-      "widgets_values": []
     },
     {
       "id": 587,
@@ -391,7 +322,7 @@
         "1": 96
       },
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -402,7 +333,7 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 1252
+          "link": 1260
         }
       ],
       "outputs": [
@@ -431,25 +362,57 @@
       ],
       "color": "#232",
       "bgcolor": "#353"
+    },
+    {
+      "id": 589,
+      "type": "CheckpointLoaderSimple",
+      "pos": {
+        "0": -500,
+        "1": 250
+      },
+      "size": {
+        "0": 360,
+        "1": 100
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": null
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1259,
+            1260
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            1261
+          ],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "realvisxlV50_v50LightningBakedvae.safetensors"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
     }
   ],
   "links": [
-    [
-      1005,
-      528,
-      0,
-      529,
-      0,
-      "IMAGE"
-    ],
-    [
-      1007,
-      531,
-      0,
-      530,
-      1,
-      "VAE"
-    ],
     [
       1241,
       584,
@@ -465,14 +428,6 @@
       584,
       3,
       "IMAGE"
-    ],
-    [
-      1252,
-      580,
-      0,
-      587,
-      1,
-      "CLIP"
     ],
     [
       1253,
@@ -499,14 +454,6 @@
       "PIPE"
     ],
     [
-      1256,
-      580,
-      0,
-      588,
-      1,
-      "CLIP"
-    ],
-    [
       1257,
       534,
       0,
@@ -524,9 +471,41 @@
     ],
     [
       1259,
+      589,
+      1,
+      588,
+      1,
+      "CLIP"
+    ],
+    [
+      1260,
+      589,
+      1,
+      587,
+      1,
+      "CLIP"
+    ],
+    [
+      1261,
+      589,
+      2,
+      530,
+      1,
+      "VAE"
+    ],
+    [
+      1262,
       530,
       0,
       351,
+      0,
+      "IMAGE"
+    ],
+    [
+      1263,
+      591,
+      0,
+      529,
       0,
       "IMAGE"
     ]
@@ -535,10 +514,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.7247295000000004,
+      "scale": 0.8769226950000005,
       "offset": [
-        679.3196754354946,
-        80.60613789648367
+        570.3286926097892,
+        6.798044267632111
       ]
     }
   },
