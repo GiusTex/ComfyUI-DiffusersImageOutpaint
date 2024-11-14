@@ -44,7 +44,7 @@ The extension gives 4 nodes:
 - **Controlnet model**: same as above, except you don't need the `scheduler`.
 
 #### Unet and Controlnet Models Loader using ComfYUI nodes canceled
-Let me clarify: I _can_ load them, it's just that they don't work in the code, I don't understand how they are loaded differently, maybe this has something to do with the auto config (comfyui loaders don't ask you config files), or maybe it uses different classes, anyway whenever I pass the models loaded via comfyui, they give errors, so I can't use them.
+I can load them but then they don't work in the inference code, since comfyui load diffusers models in a different format ([reddit post](https://www.reddit.com/r/comfyui/comments/17fvb49/comment/k6cz9yv/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)).
 
 ## Credits
 diffusers-image-outpaint by [fffiloni](https://huggingface.co/spaces/fffiloni/diffusers-image-outpaint/tree/main)
