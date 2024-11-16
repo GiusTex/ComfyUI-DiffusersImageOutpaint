@@ -12,6 +12,7 @@ from .pipeline_fill_sd_xl import StableDiffusionXLFillPipeline
 from diffusers import AutoencoderKL, TCDScheduler
 from diffusers.models.model_loading_utils import load_state_dict
 from transformers import CLIPTextModel, CLIPTextModelWithProjection, CLIPTokenizer
+from diffusers import UNet2DConditionModel
 
 
 def get_first_folder_list(folder_name: str) -> tuple[list[str], dict[str, float], float]:
@@ -128,21 +129,26 @@ def loadVaeModel(vae_path, device, dtype, enable_vae_slicing, enable_vae_tiling)
     return vae
 
 
+def loadUnetModel(model_path, device, dtype):
+    unet = UNet2DConditionModel.from_pretrained(model_path, subfolder="unet", use_safetensors=True)
+    unet.to(device, dtype)
+    return unet
+
+
 def diffuserOutpaintSamples(model_path, controlnet_model, diffuser_outpaint_cnet_image, dtype, controlnet_path, 
                             prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds, 
                             device, steps, controlnet_strength, guidance_scale, 
                             keep_model_device):
     
     controlnet_model = loadControlnetModel(device, dtype, controlnet_path)
-    
+    unet = loadUnetModel(model_path, device, dtype)
+                                
     with open(f"{model_path}/scheduler/scheduler_config.json", "r") as f:
         scheduler_config = json.load(f)
     scheduler = TCDScheduler.from_config(scheduler_config)
     
-    pipe = StableDiffusionXLFillPipeline.from_pretrained(
-        model_path,
-        torch_dtype=dtype,
-        variant="fp16",
+    pipe = StableDiffusionXLFillPipeline(
+        unet,
         scheduler=scheduler,
     )
     if not keep_model_device:
