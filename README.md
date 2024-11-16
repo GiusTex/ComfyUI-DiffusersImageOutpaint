@@ -17,7 +17,7 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 
 ## Installation
 - Download this extension or `git clone` it in comfyui/custom_nodes, then (if comfyui-manager didn't already install the requirements or you have missing modules), from comfyui virtual env write `cd your/path/to/this/extension` and `pip install -r requirements.txt`.
-- Download models comfyui/models/diffusion_models:
+- Download models in comfyui/models/diffusion_models:
    - model_name:
       - unet:
          - `diffusion_pytorch_model.fp16.safetensors` ([example](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/blob/main/unet/diffusion_pytorch_model.fp16.safetensors))
