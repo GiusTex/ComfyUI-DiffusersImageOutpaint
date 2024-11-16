@@ -17,16 +17,17 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 
 ## Installation
 - Download this extension or `git clone` it in comfyui/custom_nodes, then (if comfyui-manager didn't already install the requirements or you have missing modules), from comfyui virtual env write `cd your/path/to/this/extension` and `pip install -r requirements.txt`.
-- Download models in the **`comfyui/models/diffusion_models`** folder, following the grid below (you can use the links to download the suggested models; you can also change the main model ([RealvisXLv50-bakedVae on Civitai](https://civitai.com/models/139562/realvisxl-v50)), but you need the specified controlnet since the extension is hardcoded to use it, for now):
-  | 	**main model**	 | 	**controlnet model**	 |
-  | 	:-----:	 | 	:-----:	 |
-  | 	**[Diffuser Model folder](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/tree/main)** (you can change this model)	|	**[Diffuser Controlnet folder](https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/tree/main)** (you need this model)	 |
-  | 	model_index-json	|	config_promax.json, diffusion_pytorch_model_promax.safetensors	 |
-  | 	**Unet folder**	| |
-  | 	config.json, diffusion_pytorch_model.fp16.safetensors	| |
-  | 	**Scheduler folder**	| |
-  | 	scheduler_config.json	| |
-  
+- Download models comfyui/models/diffusion_models:
+   - model_name:
+      - unet:
+         - `diffusion_pytorch_model.fp16.safetensors` ([example](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/blob/main/unet/diffusion_pytorch_model.fp16.safetensors))
+         - `config.json` ([example](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/blob/main/unet/config.json))
+     - scheduler:
+       - `scheduler_config.json` ([example](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/blob/main/scheduler/scheduler_config.json))
+     - `model_index.json` ([example](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/blob/main/model_index.json))
+   - controlnet_name:
+     - `config_promax.json` ([example](https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/blob/main/config_promax.json)), `diffusion_pytorch_model_promax.safetensors` ([example](https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/blob/main/diffusion_pytorch_model_promax.safetensors))
+
 ## Overview
 - **Minimum VRAM**: 6 gb with 1280x720 image, rtx 3060, RealVisXL_V5.0_Lightning, sdxl-vae-fp16-fix, controlnet-union-sdxl-promax using `sequential_cpu_offload`, otherwise 8,3 gb;
 - As seen in [this issue](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/issues/7#issuecomment-2410852908), images with **square corners** are required.
