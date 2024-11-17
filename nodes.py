@@ -18,6 +18,7 @@ def can_expand(source_width, source_height, target_width, target_height, alignme
 
 class PadImageForDiffusersOutpaint:
     _alignment_options = ["Middle", "Left", "Right", "Top", "Bottom"]
+    _resize_option = ["Full", "50%", "33%", "25%", "Custom"]
     @classmethod
     def INPUT_TYPES(s):
         return {
