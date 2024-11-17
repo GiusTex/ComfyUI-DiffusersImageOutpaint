@@ -8,7 +8,7 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
   - Side notes:
     - Now images with round angles work, since the new editable mask covers them, like in the original huggingface space.
     - You can use "mask" and "diffusers outpaint cnet image" outputs to preview mask and image.
-    - You can find in the same workflow file the workflow with the checkpoint-loader-simple node and another one with clip + vae loader.
+    - You can find in the same [workflow file](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/blob/New-Pad-Node-Options/Diffusers-Outpaint-DoubleWorkflow.json) the workflow with the checkpoint-loader-simple node and another one with clip + vae loader nodes.
 - 22/10/2024:
   - Unet and Controlnet Models Loader using ComfYUI nodes canceled, since I can't find a way to load them properly; more info at the end.
   - Guide to change model used.
