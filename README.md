@@ -42,8 +42,9 @@ The extension gives 4 nodes:
 - You can also pass image and mask to `vae encode (for inpainting)` node, then pass the latent to a `sampler`, but controlnets and ip-adapters are harder to use compared to diffusers outpaint.
 
 ### Change model used
-- **Main model**: On huggingface, choose a model from [text2image models](https://huggingface.co/models?pipeline_tag=text-to-image&sort=trending), then create a new folder named after it in `comfyui/models/diffusion_models`, then download in it the subfolders `unet` and `scheduler`.
-- **Controlnet model**: same as above, except you don't need the `scheduler`.
+- **Main model**: On huggingface, choose a model from [text2image models](https://huggingface.co/models?pipeline_tag=text-to-image&sort=trending), then create a new folder named after it in `comfyui/models/diffusion_models`, then download in it the subfolders `unet` (if not available use `transformer`) and `scheduler`.
+  - Hint: sometimes in the `unet` or `transformer` folder there are more model files and not all are required. If you have `model.fp16` and `model`, I suggest you to use the fp16 variant; if you have `model-001-of-002`, `model-002-of-002`, `model`, choose model (instead of the fragmented version).
+- **Controlnet model**: download `config.json` and the safetensors `model`.
 
 #### Unet and Controlnet Models Loader using ComfYUI nodes canceled
 I can load them but then they don't work in the inference code, since comfyui load diffusers models in a different format ([reddit post](https://www.reddit.com/r/comfyui/comments/17fvb49/comment/k6cz9yv/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)).
