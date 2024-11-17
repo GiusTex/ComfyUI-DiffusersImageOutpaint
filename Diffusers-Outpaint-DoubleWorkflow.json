@@ -1,0 +1,1100 @@
+{
+  "last_node_id": 30,
+  "last_link_id": 35,
+  "nodes": [
+    {
+      "id": 4,
+      "type": "VAEDecode",
+      "pos": [
+        1220,
+        -140
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 3
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      }
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "pos": [
+        930,
+        120
+      ],
+      "size": [
+        260,
+        60
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "sdxl_vae.safetensors"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 7,
+      "type": "DualCLIPLoader",
+      "pos": [
+        160,
+        40
+      ],
+      "size": [
+        260,
+        110
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            7,
+            9
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DualCLIPLoader"
+      },
+      "widgets_values": [
+        "clip_l.safetensors",
+        "model.fp16.safetensors",
+        "sdxl"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 9,
+      "type": "EncodeDiffusersOutpaintPrompt",
+      "pos": [
+        450,
+        -10
+      ],
+      "size": [
+        400,
+        96
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 8
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [],
+          "slot_index": 0
+        },
+        {
+          "name": "diffusers_conditioning",
+          "type": "CONDITIONING",
+          "links": [
+            12
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EncodeDiffusersOutpaintPrompt"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 1,
+      "type": "PreviewImage",
+      "pos": [
+        1230,
+        -50
+      ],
+      "size": [
+        510,
+        490
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 18,
+      "type": "PadImageForDiffusersOutpaint",
+      "pos": [
+        560,
+        130
+      ],
+      "size": [
+        290,
+        310
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PadImageForDiffusersOutpaint"
+      },
+      "widgets_values": [
+        1280,
+        720,
+        "Middle",
+        "Full",
+        50,
+        10,
+        true,
+        true,
+        true,
+        true
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 8,
+      "type": "EncodeDiffusersOutpaintPrompt",
+      "pos": [
+        450,
+        -160
+      ],
+      "size": [
+        400,
+        96
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 6
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [
+            10
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "diffusers_conditioning",
+          "type": "CONDITIONING",
+          "links": [
+            11
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EncodeDiffusersOutpaintPrompt"
+      },
+      "widgets_values": [
+        "a verdant valley with waterfalls, rainbow"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 21,
+      "type": "PreviewImage",
+      "pos": [
+        1230,
+        -870
+      ],
+      "size": [
+        510,
+        490
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 24
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 22,
+      "type": "VAEDecode",
+      "pos": [
+        1220,
+        -960
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 25
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            24
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      }
+    },
+    {
+      "id": 25,
+      "type": "EncodeDiffusersOutpaintPrompt",
+      "pos": [
+        450,
+        -830
+      ],
+      "size": [
+        400,
+        96
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": null
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [],
+          "slot_index": 0
+        },
+        {
+          "name": "diffusers_conditioning",
+          "type": "CONDITIONING",
+          "links": [
+            29
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EncodeDiffusersOutpaintPrompt"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 26,
+      "type": "DiffusersImageOutpaint",
+      "pos": [
+        900,
+        -960
+      ],
+      "size": [
+        300,
+        214
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 27
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 28
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 29
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            25
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DiffusersImageOutpaint"
+      },
+      "widgets_values": [
+        1.5,
+        1,
+        770989832261247,
+        "randomize",
+        8
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 27,
+      "type": "PadImageForDiffusersOutpaint",
+      "pos": [
+        560,
+        -690
+      ],
+      "size": [
+        290,
+        310
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 31
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "links": [
+            30
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PadImageForDiffusersOutpaint"
+      },
+      "widgets_values": [
+        1280,
+        720,
+        "Middle",
+        "Full",
+        50,
+        10,
+        true,
+        true,
+        true,
+        true
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        180,
+        200
+      ],
+      "size": [
+        320,
+        310
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            20
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "20230403_183417.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 24,
+      "type": "EncodeDiffusersOutpaintPrompt",
+      "pos": [
+        450,
+        -980
+      ],
+      "size": [
+        400,
+        96
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 34
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 32
+        }
+      ],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [
+            27
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "diffusers_conditioning",
+          "type": "CONDITIONING",
+          "links": [
+            28
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EncodeDiffusersOutpaintPrompt"
+      },
+      "widgets_values": [
+        "a verdant valley with waterfalls, rainbow"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 10,
+      "type": "DiffusersImageOutpaint",
+      "pos": [
+        900,
+        -140
+      ],
+      "size": [
+        300,
+        214
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "link": 10
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 11
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 12
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DiffusersImageOutpaint"
+      },
+      "widgets_values": [
+        1.5,
+        1,
+        770989832261247,
+        "randomize",
+        8
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 29,
+      "type": "LoadDiffusersOutpaintModels",
+      "pos": [
+        30,
+        -1070
+      ],
+      "size": [
+        320,
+        154
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 2,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [
+            34
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadDiffusersOutpaintModels"
+      },
+      "widgets_values": [
+        "RealVisXL_V5.0_Lightning",
+        "controlnet-union-sdxl-1.0",
+        "auto",
+        "auto",
+        false
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 19,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        30,
+        -870
+      ],
+      "size": [
+        340,
+        100
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 2,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": null
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            32,
+            33
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            35
+          ],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "realvisxlV50_v50LightningBakedvae.safetensors"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 28,
+      "type": "LoadImage",
+      "pos": [
+        180,
+        -620
+      ],
+      "size": [
+        300,
+        300
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 2,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            31
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "20230403_183417.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 30,
+      "type": "Note",
+      "pos": [
+        20,
+        -720
+      ],
+      "size": [
+        380,
+        60
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 2,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "The Checkpoint Loader Simple load a model with baked in Clip and Vae, so I don't need Clip Loader and Vae Loader"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 11,
+      "type": "LoadDiffusersOutpaintModels",
+      "pos": [
+        90,
+        -160
+      ],
+      "size": [
+        320,
+        154
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "diffusers_outpaint_pipe",
+          "type": "PIPE",
+          "links": [
+            6,
+            8
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadDiffusersOutpaintModels"
+      },
+      "widgets_values": [
+        "RealVisXL_V5.0_Lightning",
+        "controlnet-union-sdxl-1.0",
+        "auto",
+        "auto",
+        false
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    }
+  ],
+  "links": [
+    [
+      1,
+      4,
+      0,
+      1,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      10,
+      0,
+      4,
+      0,
+      "LATENT"
+    ],
+    [
+      4,
+      5,
+      0,
+      4,
+      1,
+      "VAE"
+    ],
+    [
+      6,
+      11,
+      0,
+      8,
+      0,
+      "PIPE"
+    ],
+    [
+      7,
+      7,
+      0,
+      8,
+      1,
+      "CLIP"
+    ],
+    [
+      8,
+      11,
+      0,
+      9,
+      0,
+      "PIPE"
+    ],
+    [
+      9,
+      7,
+      0,
+      9,
+      1,
+      "CLIP"
+    ],
+    [
+      10,
+      8,
+      0,
+      10,
+      0,
+      "PIPE"
+    ],
+    [
+      11,
+      8,
+      1,
+      10,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      12,
+      9,
+      1,
+      10,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      20,
+      3,
+      0,
+      18,
+      0,
+      "IMAGE"
+    ],
+    [
+      22,
+      18,
+      2,
+      10,
+      3,
+      "IMAGE"
+    ],
+    [
+      24,
+      22,
+      0,
+      21,
+      0,
+      "IMAGE"
+    ],
+    [
+      25,
+      26,
+      0,
+      22,
+      0,
+      "LATENT"
+    ],
+    [
+      27,
+      24,
+      0,
+      26,
+      0,
+      "PIPE"
+    ],
+    [
+      28,
+      24,
+      1,
+      26,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      29,
+      25,
+      1,
+      26,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      30,
+      27,
+      2,
+      26,
+      3,
+      "IMAGE"
+    ],
+    [
+      31,
+      28,
+      0,
+      27,
+      0,
+      "IMAGE"
+    ],
+    [
+      32,
+      19,
+      1,
+      24,
+      1,
+      "CLIP"
+    ],
+    [
+      33,
+      19,
+      1,
+      25,
+      1,
+      "CLIP"
+    ],
+    [
+      34,
+      29,
+      0,
+      24,
+      0,
+      "PIPE"
+    ],
+    [
+      35,
+      19,
+      2,
+      22,
+      1,
+      "VAE"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Checkpoint Loader Simple",
+      "bounding": [
+        -3.8856265544891357,
+        -1143.90380859375,
+        1790.8021240234375,
+        831.0167236328125
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Clip Loader + Vae Loader",
+      "bounding": [
+        11.18426513671875,
+        -245.8946990966797,
+        1765.697265625,
+        778.4640502929688
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8769226950000009,
+      "offset": [
+        54.93129335580923,
+        254.6595267695907
+      ]
+    }
+  },
+  "version": 0.4
+}
