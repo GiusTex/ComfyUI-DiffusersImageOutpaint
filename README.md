@@ -47,7 +47,7 @@ The extension gives 4 nodes:
 You _can_ also pass image and mask to `vae encode (for inpainting)` node, then pass the latent to a `sampler`, but controlnets and ip-adapters won't always give good results like with diffusers outpaint, and they require a different workflow, not covered by this extension.
 
 ### Change model used
-- **Main model**: On huggingface, choose a model from [text2image models](https://huggingface.co/models?pipeline_tag=text-to-image&sort=trending), then create a new folder named after it in `comfyui/models/diffusion_models`, then download in it the subfolders `unet` (if not available use `transformer`) and `scheduler`.
+- **Main model**: On huggingface, choose a model from [text2image models](https://huggingface.co/models?pipeline_tag=text-to-image&sort=trending) (**sdxl and maybe sd1.5 model types should work, while flux doesn't**), then create a new folder named after it in `comfyui/models/diffusion_models`, then download in it the subfolders `unet` (if not available use `transformer`) and `scheduler`.
   - Hint: sometimes in the `unet` or `transformer` folder there are more model files and not all are required. If you have `model.fp16` and `model`, I suggest you to use the fp16 variant; if you have `model-001-of-002`, `model-002-of-002`, `model`, choose model (instead of the fragmented version).
 - **Controlnet model**: download `config.json` and the safetensors `model`.
 
