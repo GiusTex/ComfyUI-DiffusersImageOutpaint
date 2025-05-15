@@ -213,8 +213,8 @@ class LoadDiffuserModel:
 
         # Go 2 folders back
         comfy_dir = os.path.dirname(os.path.dirname(my_dir))
-        unet_path = f"D:/models/diffusion_models/{unet_name}"
-
+        unet_path = folder_paths.get_full_path_or_raise("diffusion_models", unet_name)
+        
         device = get_device_by_name(device)
         dtype = get_dtype_by_name(dtype)
         
@@ -256,8 +256,8 @@ class LoadDiffuserControlnet:
 
         # Go 2 folders back
         comfy_dir = os.path.dirname(os.path.dirname(my_dir))
-        #controlnet_path = f"D:/models/controlnet/{controlnet_model}"  <-----------FIX
-
+        controlnet_path = folder_paths.get_full_path_or_raise("controlnet", controlnet_model)
+        
         device = get_device_by_name(device)
         dtype = get_dtype_by_name(dtype)
         
