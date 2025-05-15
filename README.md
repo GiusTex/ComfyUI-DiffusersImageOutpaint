@@ -16,11 +16,6 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 - 20/10/2024: No more need to download tokenizers nor text encoders! Now comfyui clip loader works, and you can use your clip models. You can also use the Checkpoint Loader Simple node, to skip the clip selection part.
 - 10/2024: You don't need any more the diffusers vae, and can use the extension in low vram mode using `sequential_cpu_offload` (also thanks to [zmwv823](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/pull/4)) that pushes the vram usage from *8,3 gb* down to **_6 gb_**.
 
-#### To do list to [change model used](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/pull/14):
-- - [x] ComfyUI Clip Loader Node
-- ~[ ] ComfyUI Load Diffusion Model Node~ (more info [below](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint#unet-and-controlnet-models-loader-using-comfyui-nodes-canceled))
-- ~[ ] ComfyUI Load Conotrolnet Model Node~ (more info [below](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint#unet-and-controlnet-models-loader-using-comfyui-nodes-canceled))
-
 ## Installation
 - Download this extension or `git clone` it in comfyui/custom_nodes, then (if comfyui-manager didn't already install the requirements or you have missing modules), from comfyui virtual env write `cd your/path/to/this/extension` and `pip install -r requirements.txt`.
 - Download a sdxl model ([example](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/resolve/main/unet/diffusion_pytorch_model.fp16.safetensors)) in comfyui/models/diffusion_models;
@@ -47,9 +42,6 @@ Since for now only sdxl models work, the config are chosen automatically. If in 
 - **Main model**: On huggingface, choose a model from [text2image models](https://huggingface.co/models?pipeline_tag=text-to-image&sort=trending) (**sdxl and maybe sd1.5 model types should work, while flux doesn't**), then create a new folder named after it in `comfyui/models/diffusion_models`, then download in it the subfolders `unet` (if not available use `transformer`) and `scheduler`.
   - Hint: sometimes in the `unet` or `transformer` folder there are more model files and not all are required. If you have `model.fp16` and `model`, I suggest you to use the fp16 variant; if you have `model-001-of-002`, `model-002-of-002`, `model`, choose model (instead of the fragmented version).
 - **Controlnet model**: download `config.json` and the safetensors `model`.
-
-#### Unet and Controlnet Models Loader using ComfYUI nodes canceled
-I can load them but then they don't work in the inference code, since comfyui load diffusers models in a different format ([reddit post](https://www.reddit.com/r/comfyui/comments/17fvb49/comment/k6cz9yv/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)).
 
 ## Missing 'loaded_keys' error
 Recent versions of `transformers` and `diffusers` broke somethings, you need to revert back, command with some working versions (found [here](https://huggingface.co/spaces/fffiloni/diffusers-image-outpaint/blob/main/requirements.txt)) (do it inside your comfyui env): `pip install transformers==4.45.0 --upgrade diffusers==0.32.2 --upgrade`.
