@@ -1,11 +1,30 @@
 import torch
 import os
 from PIL import Image, ImageDraw
-from .utils import get_first_folder_list, tensor2pil, pil2tensor, diffuserOutpaintSamples, get_device_by_name, get_dtype_by_name, clearVram
+from .utils import get_config_folder_list, tensor2pil, pil2tensor, diffuserOutpaintSamples, get_device_by_name, get_dtype_by_name, clearVram, test_scheduler_scale_model_input
+import folder_paths
+from .unet_2d_condition import UNet2DConditionModel
+from diffusers import TCDScheduler
+from .controlnet_union import ControlNetModel_Union
+from diffusers.models.model_loading_utils import load_state_dict
+from safetensors.torch import load_file
+
+import logging
 
 
 # Get the absolute path of various directories
 my_dir = os.path.dirname(os.path.abspath(__file__))
+
+def update_folder_names_and_paths(key, targets=[]):
+    # check for existing key
+    base = folder_paths.folder_names_and_paths.get(key, ([], {}))
+    base = base[0] if isinstance(base[0], (list, set, tuple)) else []
+    # find base key & add w/ fallback, sanity check + warning
+    target = next((x for x in targets if x in folder_paths.folder_names_and_paths), targets[0])
+    orig, _ = folder_paths.folder_names_and_paths.get(target, ([], {}))
+    folder_paths.folder_names_and_paths[key] = (orig or base, {".gguf"})
+    if base and base != orig:
+        logging.warning(f"Unknown file list already present on key {key}: {base}")
 
 def can_expand(source_width, source_height, target_width, target_height, alignment):
     """Checks if the image can be expanded based on the alignment."""
