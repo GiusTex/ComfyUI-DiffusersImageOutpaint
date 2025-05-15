@@ -21,6 +21,17 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 - Download a sdxl model ([example](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/resolve/main/unet/diffusion_pytorch_model.fp16.safetensors)) in comfyui/models/diffusion_models;
 - Download a sdxl controlnet model ([example](https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/blob/main/diffusion_pytorch_model_promax.safetensors)) in comfyui/models/controlnet.
 
+**⚠ Choosing model and controlnet**: As of now, I only tried `RealVisXL_V5.0_Lightning` and `controlnet-union-promax_sdxl`. Mixing RealVisXL with controlnet-union (non promax version) gave error, so it could be that other models/controlnets give error as well, but I haven't tried much combinations so I can't tell.
+
+<details>
+  <summary>Some considerations</summary>
+  
+  Flux is still beyond me (even if I was quite there, I think). I haven't tried integrating other model types, and after my flux failure I don't think I'll try adding other model types.
+
+  Since for now only sdxl models work, the configs are hardcoded.
+  
+</details>
+
 - (Dual) Clip Loader node: if you use the Clip Loader instead of Checkpoint Loader Simple, and want to use an `sdxl type` model like RealVisXL_V5.0_Lightning, you can download `clip_I` and `clip_g` from [here](https://huggingface.co/Comfy-Org/stable-diffusion-3.5-fp8/tree/main/text_encoders). You can use [this workflow](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/blob/New-Pad-Node-Options/Diffusers-Outpaint-DoubleWorkflow.json) (change model.fp16 with `clip_g`).
 
 ## Overview
@@ -35,13 +46,6 @@ The extension gives 5 nodes:
 - **Diffusers Image Outpaint**: This is the main node, that outpaints the image. Currently the generation process is based on fffiloni's one, so you can't reproduce a specific a specific outpaint, and the `seed` option you see is only used to update the UI and generate a new image. You can specify the amount of `steps` to generate the image.
 
 You _can_ also pass image and mask to `vae encode (for inpainting)` node, then pass the latent to a `sampler`, but controlnets and ip-adapters won't always give good results like with diffusers outpaint, and they require a different workflow, not covered by this extension.
-
-Since for now only sdxl models work, the config are chosen automatically. If in the future other types that would require different config will work, I could add more selection options.
-
-### Change model used
-- **Main model**: On huggingface, choose a model from [text2image models](https://huggingface.co/models?pipeline_tag=text-to-image&sort=trending) (**sdxl and maybe sd1.5 model types should work, while flux doesn't**), then create a new folder named after it in `comfyui/models/diffusion_models`, then download in it the subfolders `unet` (if not available use `transformer`) and `scheduler`.
-  - Hint: sometimes in the `unet` or `transformer` folder there are more model files and not all are required. If you have `model.fp16` and `model`, I suggest you to use the fp16 variant; if you have `model-001-of-002`, `model-002-of-002`, `model`, choose model (instead of the fragmented version).
-- **Controlnet model**: download `config.json` and the safetensors `model`.
 
 ## Missing 'loaded_keys' error
 Recent versions of `transformers` and `diffusers` broke somethings, you need to revert back, command with some working versions (found [here](https://huggingface.co/spaces/fffiloni/diffusers-image-outpaint/blob/main/requirements.txt)) (do it inside your comfyui env): `pip install transformers==4.45.0 --upgrade diffusers==0.32.2 --upgrade`.
