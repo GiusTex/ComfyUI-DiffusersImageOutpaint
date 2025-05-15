@@ -312,10 +312,8 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
                 if i == len(timesteps) - 1 or (
                     (i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0
                 ):
-                    #progress_bar.update()
                     pbar.update()
                     ComfyUI_ProgressBar.update(1)
-                    #yield latents_to_rgb(latents)
         
         latents = latents / 0.13025
         yield latents
