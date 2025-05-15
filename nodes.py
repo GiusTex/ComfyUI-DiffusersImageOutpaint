@@ -3,7 +3,7 @@ import os
 from PIL import Image, ImageDraw
 from .utils import get_config_folder_list, tensor2pil, pil2tensor, diffuserOutpaintSamples, get_device_by_name, get_dtype_by_name, clearVram, test_scheduler_scale_model_input
 import folder_paths
-from .unet_2d_condition import UNet2DConditionModel
+from diffusers.models import UNet2DConditionModel
 from diffusers import TCDScheduler
 from .controlnet_union import ControlNetModel_Union
 from diffusers.models.model_loading_utils import load_state_dict
