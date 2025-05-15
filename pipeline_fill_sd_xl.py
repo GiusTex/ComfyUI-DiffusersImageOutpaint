@@ -65,7 +65,7 @@ def retrieve_timesteps(
     return timesteps, num_inference_steps
 
 
-class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
+class StableDiffusionXLFillPipeline:
     
     def __init__(
         self,
