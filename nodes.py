@@ -173,44 +173,92 @@ class PadImageForDiffusersOutpaint:
         return (new_image, tensor_mask, tensor_cnet_image,)
 
 
-class LoadDiffusersOutpaintModels:
+class LoadDiffuserModel:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model": (get_first_folder_list("diffusion_models"), {"default": "RealVisXL_V5.0_Lightning", "tooltip": "The diffuser model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
-                "controlnet_model": (get_first_folder_list("diffusion_models"), {"default": "controlnet-union-sdxl-1.0", "tooltip": "The controlnet model used for denoising the input latent. (Put model files in a folder, in diffusion_models folder)."}),
+                "unet_name": (folder_paths.get_filename_list("diffusion_models"), {"tooltip": "The name of the unet (model) to load."}),
                 "device": (["auto", "cuda", "cpu", "mps", "xpu", "meta"],{"default": "auto", "tooltip": "Device for inference, default is auto checked by comfyui"}), 
                 "dtype": (["auto","fp16","bf16","fp32", "fp8_e4m3fn", "fp8_e4m3fnuz", "fp8_e5m2", "fp8_e5m2fnuz"],{"default":"auto", "tooltip": "Model precision for inference, default is auto checked by comfyui"}),
-                "sequential_cpu_offload": ("BOOLEAN", {"default": False, "tooltip": "Inference by default needs around 8gb vram, if this option is on it will move controlnet and unet back and forth between cpu and vram, to have only one model loaded at a time (around 6 gb vram used), useful for gpus under 8gb but will impact inference speed."}),
+                "model_type": (get_config_folder_list("configs"), {"default": "sdxl", "tooltip": "The json configs used for the unet. (Put unet config in \"configs/your model type/unet\", and scheduler config in \"configs/your model type/scheduler\")."}),
             },
         }
 
-    RETURN_TYPES = ("PIPE",)
-    RETURN_NAMES = ("diffusers_outpaint_pipe",)
+    RETURN_TYPES = ("MODEL", "SCHEDULER")
+    RETURN_NAMES = ("model", "scheduler configs")
     FUNCTION = "load"
     CATEGORY = "DiffusersOutpaint"
    
-    def load(self, model, controlnet_model, device, dtype, sequential_cpu_offload):
+    def load(self, unet_name, device, dtype, model_type):
+
         # Go 2 folders back
         comfy_dir = os.path.dirname(os.path.dirname(my_dir))
-        
-        model_path = f"{comfy_dir}/models/diffusion_models/{model}"
-        controlnet_path = f"{comfy_dir}/models/diffusion_models/{controlnet_model}"
-        
+        unet_path = f"D:/models/diffusion_models/{unet_name}"
+
         device = get_device_by_name(device)
         dtype = get_dtype_by_name(dtype)
         
-        diffusers_outpaint_pipe = {
-            "model_path": model_path,
-            "controlnet_model": controlnet_model,
-            "controlnet_path": controlnet_path,
-            "device": device,
-            "dtype": dtype,
-            "keep_model_device": sequential_cpu_offload,
-        }
+        if model_type == "sdxl":
+            print("Loading sdxl unet...")
+
+            unet = UNet2DConditionModel.from_config(f"{comfy_dir}/custom_nodes/ComfyUI-DiffusersImageOutpaint/configs", subfolder=f"{model_type}/unet").to(device, dtype)
+            unet.load_state_dict(load_file(unet_path))
         
-        return (diffusers_outpaint_pipe,)
+            scheduler = TCDScheduler.from_config(f"{comfy_dir}/custom_nodes/ComfyUI-DiffusersImageOutpaint/configs", subfolder=f"{model_type}/scheduler")
+        
+        scale_model_input_method = test_scheduler_scale_model_input(comfy_dir, model_type)
+        
+        scheduler_configs = {
+            "scheduler": scheduler,
+            "scale_model_input_method": scale_model_input_method,
+        }
+
+        return (unet, scheduler_configs,)
+
+
+class LoadDiffuserControlnet:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "controlnet_model": (folder_paths.get_filename_list("controlnet"), {"tooltip": "The controlnet model used for denoising the input latent."}),
+                "device": (["auto", "cuda", "cpu", "mps", "xpu", "meta"],{"default": "auto", "tooltip": "Device for inference, default is auto checked by comfyui"}), 
+                "dtype": (["auto","fp16","bf16","fp32", "fp8_e4m3fn", "fp8_e4m3fnuz", "fp8_e5m2", "fp8_e5m2fnuz"],{"default":"auto", "tooltip": "Model precision for inference, default is auto checked by comfyui"}),
+                "controlnet_type": (get_config_folder_list("configs"), {"default": "controlnet-sdxl-promax", "tooltip": "The json configs used for controlnet. (Put config(s) in \"configs/your controlnet type\")."}),
+            },
+        }
+
+    RETURN_TYPES = ("CONTROL_NET",)
+    FUNCTION = "load"
+    CATEGORY = "DiffusersOutpaint"
+   
+    def load(self, controlnet_model, device, dtype, controlnet_type):
+
+        # Go 2 folders back
+        comfy_dir = os.path.dirname(os.path.dirname(my_dir))
+        #controlnet_path = f"D:/models/controlnet/{controlnet_model}"  <-----------FIX
+
+        device = get_device_by_name(device)
+        dtype = get_dtype_by_name(dtype)
+        
+        if controlnet_type == "controlnet-sdxl-promax":
+            print("Loading controlnet-sdxl-promax...")
+            controlnet_model = ControlNetModel_Union.from_config(f"{comfy_dir}/custom_nodes/ComfyUI-DiffusersImageOutpaint/configs/{controlnet_type}/config_promax.json")
+        
+            state_dict = load_state_dict(load_file(controlnet_path))
+
+            model, _, _, _, _ = ControlNetModel_Union._load_pretrained_model(
+                controlnet_model, state_dict, controlnet_path, controlnet_path
+            )
+
+            controlnet_model.to(device, dtype)
+    
+            del model, state_dict, controlnet_path
+        
+            clearVram(device)
+            
+        return (controlnet_model,)
 
 
 class EncodeDiffusersOutpaintPrompt:
@@ -218,21 +266,22 @@ class EncodeDiffusersOutpaintPrompt:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "diffusers_outpaint_pipe": ("PIPE", {"tooltip": "Load the diffusers outpaint models."}),
+                "device": (["auto", "cuda", "cpu", "mps", "xpu", "meta"],{"default": "auto", "tooltip": "Device for inference, default is auto checked by comfyui"}), 
+                "dtype": (["auto","fp16","bf16","fp32", "fp8_e4m3fn", "fp8_e4m3fnuz", "fp8_e5m2", "fp8_e5m2fnuz"],{"default":"auto", "tooltip": "Model precision for inference, default is auto checked by comfyui"}),
                 "text": ("STRING", {"multiline": True, "dynamicPrompts": True, "tooltip": "The text to be encoded."}), 
                 "clip": ("CLIP", {"tooltip": "The CLIP model used for encoding the text."})
             }
         }
-    RETURN_TYPES = ("PIPE","CONDITIONING",)
-    RETURN_NAMES = ("diffusers_outpaint_pipe","diffusers_conditioning",)
+    RETURN_TYPES = ("CONDITIONING",)
+    RETURN_NAMES = ("diffusers_conditioning",)
     OUTPUT_TOOLTIPS = ("A conditioning containing the embedded text used to guide the diffusion model.",)
     FUNCTION = "encode"
     CATEGORY = "DiffusersOutpaint"
     DESCRIPTION = "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
 
-    def encode(self, diffusers_outpaint_pipe, text, clip):
-        dtype = diffusers_outpaint_pipe["dtype"]
-        device = diffusers_outpaint_pipe["device"]
+    def encode(self, device, dtype, text, clip):
+        device = get_device_by_name(device)
+        dtype = get_dtype_by_name(dtype)
         
         text = f"{text}, high quality, 4k"
         tokens = clip.tokenize(text)
@@ -255,7 +304,7 @@ class EncodeDiffusersOutpaintPrompt:
             "pooled_prompt_embeds": pooled_prompt_embeds,
         }
 
-        return (diffusers_outpaint_pipe,diffusers_conditioning,)
+        return (diffusers_conditioning,)
     
 
 class DiffusersImageOutpaint:
@@ -263,45 +312,36 @@ class DiffusersImageOutpaint:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "diffusers_outpaint_pipe": ("PIPE", {"tooltip": "Load the diffusers outpaint models."}),
+                "model": ("MODEL", {"tooltip": "The model used for denoising the input latent."}),
+                "scheduler_configs": ("SCHEDULER",),
+                "control_net": ("CONTROL_NET",),
                 "positive": ("CONDITIONING", {"tooltip": "The prompt describing what you want."}),
                 "negative": ("CONDITIONING", {"tooltip": "The prompt describing what you don't want."}),
                 "diffuser_outpaint_cnet_image": ("IMAGE", {"tooltip": "The image to outpaint."}),
                 "guidance_scale": ("FLOAT", {"default": 1.50, "min": 1.01, "max": 10, "step": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt, however too high values will negatively impact quality."}),
                 "controlnet_strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 10, "step": 0.01}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "Fake seed, workaround used to keep generating different outpaints. Set to -1 to generate different images, or a fixed number to stop that."}),
                 "steps": ("INT", {"default": 8, "min": 4, "max": 20, "tooltip": "The number of steps used in the denoising process."}),
-            }
+                "device": (["auto", "cuda", "cpu", "mps", "xpu", "meta"],{"default": "auto", "tooltip": "Device for inference, default is auto checked by comfyui"}), 
+                "dtype": (["auto","fp16","bf16","fp32", "fp8_e4m3fn", "fp8_e4m3fnuz", "fp8_e5m2", "fp8_e5m2fnuz"],{"default":"auto", "tooltip": "Model precision for inference, default is auto checked by comfyui"}),
+                "sequential_cpu_offload": ("BOOLEAN", {"default": False, "tooltip": "Inference by default needs around 8gb vram, if this option is on it will move controlnet and unet back and forth between cpu and vram, to have only one model loaded at a time (around 6 gb vram used), useful for gpus under 8gb but will impact inference speed."}),
+            },
         }
 
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "sample"
     CATEGORY = "DiffusersOutpaint"
-
-    def sample(self, diffusers_outpaint_pipe, positive, negative, diffuser_outpaint_cnet_image, guidance_scale, controlnet_strength, seed, steps):
-        
+    
+    def sample(self, device, dtype, sequential_cpu_offload, scheduler_configs, model, control_net, positive, negative, diffuser_outpaint_cnet_image, guidance_scale, controlnet_strength, steps):
         cnet_image = diffuser_outpaint_cnet_image
         cnet_image=tensor2pil(cnet_image)
         cnet_image=cnet_image.convert('RGB')
         
-        model_path = diffusers_outpaint_pipe["model_path"]
-        controlnet_model = diffusers_outpaint_pipe["controlnet_model"]
-        controlnet_path = diffusers_outpaint_pipe["controlnet_path"]
-        dtype = diffusers_outpaint_pipe["dtype"]
-        device = diffusers_outpaint_pipe["device"]
-        keep_model_device = diffusers_outpaint_pipe["keep_model_device"]
-                
-        prompt_embeds = positive["prompt_embeds"]
-        pooled_prompt_embeds = positive["pooled_prompt_embeds"]
-        negative_prompt_embeds = negative["prompt_embeds"]
-        negative_pooled_prompt_embeds = negative["pooled_prompt_embeds"]
+        keep_model_device = sequential_cpu_offload
 
-        last_rgb_latent = diffuserOutpaintSamples(model_path, controlnet_model, diffuser_outpaint_cnet_image, dtype, controlnet_path, 
-                                                  prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds, 
-                                                  device, steps, controlnet_strength, guidance_scale, 
-                                                  keep_model_device)
+        scheduler = scheduler_configs["scheduler"]
+        scale_model_input_method = scheduler_configs["scale_model_input_method"]
         
-        del prompt_embeds, pooled_prompt_embeds, negative_prompt_embeds, negative_pooled_prompt_embeds
-        clearVram(device)
-
+        last_rgb_latent = diffuserOutpaintSamples(device, dtype, keep_model_device, scheduler, scale_model_input_method, model, control_net, positive, negative, 
+                                                      cnet_image, controlnet_strength, guidance_scale, steps)
+        
         return ({"samples":last_rgb_latent},)
