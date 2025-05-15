@@ -52,7 +52,7 @@ Since for now only sdxl models work, the config are chosen automatically. If in 
 I can load them but then they don't work in the inference code, since comfyui load diffusers models in a different format ([reddit post](https://www.reddit.com/r/comfyui/comments/17fvb49/comment/k6cz9yv/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)).
 
 ## Missing 'loaded_keys' error
-Recent versions of `transformers` and `diffusers` broke somethings, you need to revert back, command with some working versions (do it inside your comfyui env): `pip install transformers==4.45.0 --upgrade diffusers==0.32.2 --upgrade`.
+Recent versions of `transformers` and `diffusers` broke somethings, you need to revert back, command with some working versions (found [here](https://huggingface.co/spaces/fffiloni/diffusers-image-outpaint/blob/main/requirements.txt)) (do it inside your comfyui env): `pip install transformers==4.45.0 --upgrade diffusers==0.32.2 --upgrade`.
 
 ## Credits
 diffusers-image-outpaint by [fffiloni](https://huggingface.co/spaces/fffiloni/diffusers-image-outpaint/tree/main)
