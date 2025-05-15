@@ -7,12 +7,7 @@ import comfy.model_management as mm
 from PIL import Image
 
 from folder_paths import map_legacy, folder_names_and_paths
-from .controlnet_union import ControlNetModel_Union
 from .pipeline_fill_sd_xl import StableDiffusionXLFillPipeline
-from diffusers import AutoencoderKL, TCDScheduler
-from diffusers.models.model_loading_utils import load_state_dict
-from transformers import CLIPTextModel, CLIPTextModelWithProjection, CLIPTokenizer
-from diffusers import UNet2DConditionModel
 
 
 def get_first_folder_list(folder_name: str) -> tuple[list[str], dict[str, float], float]:
@@ -23,9 +18,17 @@ def get_first_folder_list(folder_name: str) -> tuple[list[str], dict[str, float]
         root_folder = folders[0][0]
     elif folder_name == "diffusion_models":
         root_folder = folders[0][1]
+    elif folder_name == "controlnet":
+        root_folder = folders[0][0]
     visible_folders = [name for name in os.listdir(root_folder) if os.path.isdir(os.path.join(root_folder, name))]
     return visible_folders
 
+def get_config_folder_list(folder_name: str) -> tuple[list[str], dict[str, float], float]:
+    my_dir = os.path.dirname(os.path.abspath(__file__))
+    configs_dir = f"{my_dir}/{folder_name}"
+    
+    folders = [f for f in os.listdir(configs_dir) if os.path.isdir(os.path.join(configs_dir, f))]
+    return folders
 
 # Tensor to PIL (grabbed from WAS Suite)
 def tensor2pil(image: torch.Tensor) -> Image.Image:
@@ -67,16 +70,6 @@ def get_dtype_by_name(dtype):
 
     return dtype
 
-
-def loadDiffModels1(model_path, dtype, device):
-    tokenizer = CLIPTokenizer.from_pretrained(model_path, subfolder="tokenizer", use_fast=False)
-    tokenizer_2 = CLIPTokenizer.from_pretrained(model_path, subfolder="tokenizer_2", use_fast=False)
-    text_encoder = CLIPTextModel.from_pretrained(model_path, subfolder="text_encoder", torch_dtype=dtype).requires_grad_(False).to(device)
-    text_encoder_2 = CLIPTextModelWithProjection.from_pretrained(model_path, subfolder="text_encoder_2", torch_dtype=dtype).requires_grad_(False).to(device)
-    
-    return tokenizer, tokenizer_2, text_encoder, text_encoder_2
-
-
 def clearVram(device):
     gc.collect()
 
@@ -91,73 +84,51 @@ def clearVram(device):
         torch.xpu.empty_cache()
     elif device.type == "meta":
         torch.meta.empty_cache()
+
+
+class TCDScheduler_Custom:
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
     
-    # torch.ipc_collect() not available, and ipc_collect seems available only for cuda
-
-
-def loadControlnetModel(device, dtype, controlnet_path):
-    config_file = f"{controlnet_path}/config_promax.json"
-    config = ControlNetModel_Union.load_config(config_file)
-    controlnet_model = ControlNetModel_Union.from_config(config)
+    def scale_model_input(self, input, t):
+        scale_factor = getattr(self, 'scale_factor', 1)
+        return input * scale_factor
     
-    model_file = f"{controlnet_path}/diffusion_pytorch_model_promax.safetensors"
-    state_dict = load_state_dict(model_file)
-
-    model, _, _, _, _ = ControlNetModel_Union._load_pretrained_model(
-        controlnet_model, state_dict, model_file, f"{controlnet_path}"
-    )
-    controlnet_model.to(device, dtype)
-
-    del model, state_dict, model_file
+    def __repr__(self):
+        attrs = {key: value for key, value in self.__dict__.items()}
+        return f"TCDScheduler({attrs})"
     
-    clearVram(device)
 
-    return controlnet_model
+def test_scheduler_scale_model_input(comfy_dir, model_type):
+    scheduler_config_path = f"{comfy_dir}/custom_nodes/ComfyUI-DiffusersImageOutpaint/configs/{model_type}/scheduler/scheduler_config.json"
 
-
-def loadVaeModel(vae_path, device, dtype, enable_vae_slicing, enable_vae_tiling):
-    vae = AutoencoderKL.from_pretrained(f"{vae_path}").to(device, dtype)
-    if enable_vae_slicing:
-        vae.enable_slicing()
-    else:
-        vae.disable_slicing()
+    with open(scheduler_config_path, 'r') as f:
+        config = json.load(f)
     
-    if enable_vae_tiling:
-        vae.enable_tiling()
-    else:
-        vae.disable_tiling()
-    return vae
+    scheduler = TCDScheduler_Custom(**config)
+    scale_model_input_method = scheduler.scale_model_input
+
+    return scale_model_input_method
 
 
-def loadUnetModel(model_path, device, dtype):
-    unet = UNet2DConditionModel.from_pretrained(model_path, subfolder="unet", use_safetensors=True)
-    unet.to(device, dtype)
-    return unet
-
-
-def diffuserOutpaintSamples(model_path, controlnet_model, diffuser_outpaint_cnet_image, dtype, controlnet_path, 
-                            prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds, 
-                            device, steps, controlnet_strength, guidance_scale, 
-                            keep_model_device):
+def diffuserOutpaintSamples(device, dtype, keep_model_device, scheduler, scale_model_input_method, model, control_net, positive, negative, 
+                                                      cnet_image, controlnet_strength, guidance_scale, steps):
     
-    controlnet_model = loadControlnetModel(device, dtype, controlnet_path)
-    unet = loadUnetModel(model_path, device, dtype)
-                                
-    with open(f"{model_path}/scheduler/scheduler_config.json", "r") as f:
-        scheduler_config = json.load(f)
-    scheduler = TCDScheduler.from_config(scheduler_config)
+    prompt_embeds = positive["prompt_embeds"]
+    pooled_prompt_embeds = positive["pooled_prompt_embeds"]
+    negative_prompt_embeds = negative["prompt_embeds"]
+    negative_pooled_prompt_embeds = negative["pooled_prompt_embeds"]
+    controlnet_model = control_net
     
-    pipe = StableDiffusionXLFillPipeline(
-        unet,
-        scheduler=scheduler,
-    )
-    if not keep_model_device:
-        pipe.to(device)
+    device = get_device_by_name(device)
+    dtype = get_dtype_by_name(dtype)
+    
+    timesteps = None
+    unet = model
+    
+    pipe = StableDiffusionXLFillPipeline()
 
-    cnet_image = diffuser_outpaint_cnet_image
-    cnet_image=tensor2pil(cnet_image)
-    cnet_image=cnet_image.convert('RGB')
-    
     rgb_latents = list(pipe(
             prompt_embeds=prompt_embeds,
             negative_prompt_embeds=negative_prompt_embeds,
@@ -170,13 +141,17 @@ def diffuserOutpaintSamples(model_path, controlnet_model, diffuser_outpaint_cnet
             guidance_scale=guidance_scale,
             device=device,
             dtype=dtype,
+            unet=unet,
+            timesteps=timesteps,
+            scale_model_input_method=scale_model_input_method,
             keep_model_device=keep_model_device,
-        ))
+            scheduler=scheduler,
+    ))
     
     last_rgb_latent = rgb_latents[-1] # Access the last image
     
-    del pipe, controlnet_model, scheduler, prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds
-    
+    del pipe, unet, controlnet_model, scheduler, prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds
+        
     clearVram(device)
 
     return last_rgb_latent

@@ -1,0 +1,629 @@
+{
+  "id": "5e709e31-1e9f-475e-a837-14abe1d4f292",
+  "revision": 0,
+  "last_node_id": 586,
+  "last_link_id": 1133,
+  "nodes": [
+    {
+      "id": 499,
+      "type": "PadImageForDiffusersOutpaint",
+      "pos": [
+        -5320,
+        420
+      ],
+      "size": [
+        290,
+        314
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 906
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "links": [
+            1100
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-DiffusersImageOutpaint",
+        "ver": "6a51ce5d3baa2171a85f51d462ef9f30ff9b5d26",
+        "Node name for S&R": "PadImageForDiffusersOutpaint",
+        "aux_id": "GiusTex/ComfyUI-DiffusersImageOutpaint",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        720,
+        1280,
+        "Middle",
+        "Full",
+        50,
+        10,
+        true,
+        true,
+        true,
+        true
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 494,
+      "type": "VAEDecode",
+      "pos": [
+        -4710,
+        -70
+      ],
+      "size": [
+        140,
+        46
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 1101
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 908
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            899
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "VAEDecode",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 495,
+      "type": "PreviewImage",
+      "pos": [
+        -4550,
+        -70
+      ],
+      "size": [
+        250,
+        310
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 899
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "PreviewImage",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 497,
+      "type": "DualCLIPLoader",
+      "pos": [
+        -5570,
+        200
+      ],
+      "size": [
+        270,
+        130
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1110,
+            1111
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "DualCLIPLoader",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "clip_l.safetensors",
+        "clip_g.safetensors",
+        "sdxl",
+        "default"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 569,
+      "type": "EncodeDiffusersOutpaintPrompt",
+      "pos": [
+        -5280,
+        200
+      ],
+      "size": [
+        252.08065795898438,
+        136
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1111
+        }
+      ],
+      "outputs": [
+        {
+          "name": "diffusers_conditioning",
+          "type": "CONDITIONING",
+          "links": [
+            1099
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-DiffusersImageOutpaint",
+        "ver": "6a51ce5d3baa2171a85f51d462ef9f30ff9b5d26",
+        "Node name for S&R": "EncodeDiffusersOutpaintPrompt",
+        "aux_id": "GiusTex/ComfyUI-DiffusersImageOutpaint",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "auto",
+        "auto",
+        ""
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 501,
+      "type": "VAELoader",
+      "pos": [
+        -5010,
+        260
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            908
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "VAELoader",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "sdxl_vae.safetensors"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 573,
+      "type": "DiffusersImageOutpaint",
+      "pos": [
+        -4990,
+        -60
+      ],
+      "size": [
+        247.341796875,
+        278
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1131
+        },
+        {
+          "name": "scheduler_configs",
+          "type": "SCHEDULER",
+          "link": 1132
+        },
+        {
+          "name": "control_net",
+          "type": "CONTROL_NET",
+          "link": 1133
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 1098
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 1099
+        },
+        {
+          "name": "diffuser_outpaint_cnet_image",
+          "type": "IMAGE",
+          "link": 1100
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            1101
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-DiffusersImageOutpaint",
+        "ver": "6a51ce5d3baa2171a85f51d462ef9f30ff9b5d26",
+        "Node name for S&R": "DiffusersImageOutpaint",
+        "aux_id": "GiusTex/ComfyUI-DiffusersImageOutpaint",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        1.5,
+        1,
+        8,
+        "auto",
+        "auto",
+        false
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 531,
+      "type": "LoadDiffuserModel",
+      "pos": [
+        -5610,
+        -190
+      ],
+      "size": [
+        290,
+        150
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            1131
+          ]
+        },
+        {
+          "name": "scheduler configs",
+          "type": "SCHEDULER",
+          "links": [
+            1132
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-DiffusersImageOutpaint",
+        "ver": "6a51ce5d3baa2171a85f51d462ef9f30ff9b5d26",
+        "Node name for S&R": "LoadDiffuserModel",
+        "aux_id": "GiusTex/ComfyUI-DiffusersImageOutpaint",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "RealVisXL_V5.0_Lightning_unet.safetensors",
+        "auto",
+        "auto",
+        "sdxl"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 500,
+      "type": "LoadImage",
+      "pos": [
+        -5640,
+        430
+      ],
+      "size": [
+        270,
+        314
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            906
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "LoadImage",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "20230403_183417.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 570,
+      "type": "EncodeDiffusersOutpaintPrompt",
+      "pos": [
+        -5280,
+        10
+      ],
+      "size": [
+        252.08065795898438,
+        136
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1110
+        }
+      ],
+      "outputs": [
+        {
+          "name": "diffusers_conditioning",
+          "type": "CONDITIONING",
+          "links": [
+            1098
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-DiffusersImageOutpaint",
+        "ver": "6a51ce5d3baa2171a85f51d462ef9f30ff9b5d26",
+        "Node name for S&R": "EncodeDiffusersOutpaintPrompt",
+        "aux_id": "GiusTex/ComfyUI-DiffusersImageOutpaint",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "auto",
+        "auto",
+        "a verdant valley with waterfalls, rainbow"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 532,
+      "type": "LoadDiffuserControlnet",
+      "pos": [
+        -5650,
+        10
+      ],
+      "size": [
+        330,
+        130
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
+          "links": [
+            1133
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-DiffusersImageOutpaint",
+        "ver": "6a51ce5d3baa2171a85f51d462ef9f30ff9b5d26",
+        "Node name for S&R": "LoadDiffuserControlnet",
+        "aux_id": "GiusTex/ComfyUI-DiffusersImageOutpaint",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "controlnet-union-promax_sdxl.safetensors",
+        "auto",
+        "auto",
+        "controlnet-sdxl-promax"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    }
+  ],
+  "links": [
+    [
+      899,
+      494,
+      0,
+      495,
+      0,
+      "IMAGE"
+    ],
+    [
+      906,
+      500,
+      0,
+      499,
+      0,
+      "IMAGE"
+    ],
+    [
+      908,
+      501,
+      0,
+      494,
+      1,
+      "VAE"
+    ],
+    [
+      1098,
+      570,
+      0,
+      573,
+      3,
+      "CONDITIONING"
+    ],
+    [
+      1099,
+      569,
+      0,
+      573,
+      4,
+      "CONDITIONING"
+    ],
+    [
+      1100,
+      499,
+      2,
+      573,
+      5,
+      "IMAGE"
+    ],
+    [
+      1101,
+      573,
+      0,
+      494,
+      0,
+      "LATENT"
+    ],
+    [
+      1110,
+      497,
+      0,
+      570,
+      0,
+      "CLIP"
+    ],
+    [
+      1111,
+      497,
+      0,
+      569,
+      0,
+      "CLIP"
+    ],
+    [
+      1131,
+      531,
+      0,
+      573,
+      0,
+      "MODEL"
+    ],
+    [
+      1132,
+      531,
+      1,
+      573,
+      1,
+      "SCHEDULER"
+    ],
+    [
+      1133,
+      532,
+      0,
+      573,
+      2,
+      "CONTROL_NET"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7972024500000006,
+      "offset": [
+        5835.209356481534,
+        220.1462025110432
+      ]
+    },
+    "frontendVersion": "1.19.9",
+    "groupNodes": {},
+    "ue_links": [],
+    "links_added_by_ue": [],
+    "VHS_latentpreview": true,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

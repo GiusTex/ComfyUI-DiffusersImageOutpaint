@@ -17,12 +17,10 @@ from typing import List, Optional, Union
 import cv2
 import PIL.Image
 import torch
-import gc
 from diffusers.image_processor import PipelineImageInput, VaeImageProcessor
-from diffusers.models import AutoencoderKL, UNet2DConditionModel
-from diffusers.pipelines.pipeline_utils import DiffusionPipeline, StableDiffusionMixin
 from diffusers.schedulers import KarrasDiffusionSchedulers
 from diffusers.utils.torch_utils import randn_tensor
+from tqdm import tqdm
 
 from .controlnet_union import ControlNetModel_Union
 from comfy.utils import ProgressBar
@@ -67,20 +65,12 @@ def retrieve_timesteps(
     return timesteps, num_inference_steps
 
 
-class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
+class StableDiffusionXLFillPipeline:
     
     def __init__(
         self,
-        unet: UNet2DConditionModel,
-        scheduler: KarrasDiffusionSchedulers,
-        force_zeros_for_empty_prompt: bool = True,
     ):
         super().__init__()
-
-        self.register_modules(
-            unet=unet,
-            scheduler=scheduler,
-        )
 
         self.vae_scale_factor = 8
         self.image_processor = VaeImageProcessor(
@@ -91,10 +81,6 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
             do_convert_rgb=True,
             do_normalize=False,
         )
-        self.register_to_config(
-            force_zeros_for_empty_prompt=force_zeros_for_empty_prompt
-        )
-        self.controlnet_model = None
 
     def prepare_image(self, image, device, dtype, do_classifier_free_guidance=False):
         image = self.control_image_processor.preprocess(image).to(dtype=torch.float32)
@@ -134,7 +120,10 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
     # corresponds to doing no classifier free guidance.
     @property
     def do_classifier_free_guidance(self):
-        return self._guidance_scale > 1 and self.unet.config.time_cond_proj_dim is None
+        if hasattr(self.unet, 'config'):
+            return self._guidance_scale > 1 and self.unet.config.time_cond_proj_dim is None
+        else:
+            return self._guidance_scale > 1
 
     @property
     def num_timesteps(self):
@@ -147,6 +136,10 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
         device,
         dtype,
         keep_model_device,
+        scheduler: KarrasDiffusionSchedulers,
+        unet: object,
+        timesteps,
+        scale_model_input_method,
         prompt_embeds: torch.Tensor,
         pooled_prompt_embeds: torch.Tensor,
         negative_prompt_embeds: torch.Tensor,
@@ -158,6 +151,11 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
     ):
         self.controlnet = controlnet_model
         self._guidance_scale = guidance_scale
+        self.unet = unet
+        self.scheduler = scheduler
+        self.timesteps = timesteps
+        self.scale_model_input_method=scale_model_input_method
+
 
         # 2. Define call parameters
         batch_size = 1
@@ -228,7 +226,7 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
         ComfyUI_ProgressBar = ProgressBar(int(num_inference_steps))
 
-        with self.progress_bar(total=num_inference_steps) as progress_bar:
+        with tqdm(total=num_inference_steps) as pbar:
             for i, t in enumerate(timesteps):
                 # expand the latents if we are doing classifier free guidance
                 latent_model_input = (
@@ -314,14 +312,8 @@ class StableDiffusionXLFillPipeline(DiffusionPipeline, StableDiffusionMixin):
                 if i == len(timesteps) - 1 or (
                     (i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0
                 ):
-                    progress_bar.update()
+                    pbar.update()
                     ComfyUI_ProgressBar.update(1)
-                    #yield latents_to_rgb(latents)
-        
-        del self.unet
-        del self.controlnet
-        gc.collect()
-        torch.cuda.empty_cache()
         
         latents = latents / 0.13025
         yield latents
