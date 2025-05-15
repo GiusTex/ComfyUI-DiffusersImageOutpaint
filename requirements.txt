@@ -1,7 +1,7 @@
 torch
 numpy==1.26.4
-transformers
+transformers==4.45.0
 accelerate
-diffusers
+diffusers==0.32.2
 fastapi<0.113.0
 opencv-python
