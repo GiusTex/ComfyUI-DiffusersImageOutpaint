@@ -39,7 +39,7 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 - ~As seen in [this issue](https://github.com/GiusTex/ComfyUI-DiffusersImageOutpaint/issues/7#issuecomment-2410852908), images with **square corners** are required~.
 
 The extension gives 5 nodes:
-- **Load Diffuser Model**: a simple node to load diffusion `models`. You can download them from Huggingface (the extension doesn't download them automatically). Put them inside the `diffusion_models` folder;
+- **Load Diffuser Model**: a simple node to load diffusion `models`. You can download them from Huggingface (the extension doesn't download them automatically). Put them inside the `diffusion_models` folder. It supports only unets; for whole checkpoints (unet+clip+vae) you can use the checkpoint loader simple by comfyanonimous;
 - **Load Diffuser Controlnet**: a simple node to load diffusion `models`. You can download them from Huggingface (the extension doesn't download them automatically).  Put them inside the `controlnet` folder;
 - **Paid Image for Diffusers Outpaint**: this node resizes the image based on the specified `width` and `height`, then resizes it again based on the `resize_image` percentage, and if possible it will put the mask based on the `alignment` specified, otherwise it will revert back to the default "middle" `alignment`;
 - **Encode Diffusers Outpaint Prompt**: self explanatory. Works as `clip text encode (prompt)`, and specifies what to add to the image;
