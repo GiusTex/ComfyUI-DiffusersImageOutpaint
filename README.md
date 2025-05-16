@@ -18,7 +18,7 @@ ComfyUI nodes for outpainting images with diffusers, based on [diffusers-image-o
 
 ## Installation
 - Download this extension or `git clone` it in comfyui/custom_nodes, then (if comfyui-manager didn't already install the requirements or you have missing modules), from comfyui virtual env write `cd your/path/to/this/extension` and `pip install -r requirements.txt`.
-- Download a sdxl model ([example](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/resolve/main/unet/diffusion_pytorch_model.fp16.safetensors)) in comfyui/models/diffusion_models;
+- Download a sdxl model ([example](https://huggingface.co/SG161222/RealVisXL_V5.0_Lightning/blob/main/unet/diffusion_pytorch_model.fp16.safetensors)) in comfyui/models/diffusion_models;
 - Download a sdxl controlnet model ([example](https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/blob/main/diffusion_pytorch_model_promax.safetensors)) in comfyui/models/controlnet.
 
 **⚠ Choosing model and controlnet**: As of now, I only tried `RealVisXL_V5.0_Lightning` and `controlnet-union-promax_sdxl`. Mixing RealVisXL with controlnet-union (non promax version) gave error, so it could be that other models/controlnets give error as well, but I haven't tried much combinations so I can't tell.
